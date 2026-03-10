@@ -1,0 +1,38 @@
+.card {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+
+.stat-card-title {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.3rem;
+}
+
+.stat-card-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.stat-card-sub {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.badge-positive {
+  color: #16a34a;
+}
+
+.badge-warning {
+  color: #ea580c;
+}
+

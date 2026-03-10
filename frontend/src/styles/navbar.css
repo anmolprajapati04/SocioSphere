@@ -1,0 +1,50 @@
+.navbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(46, 105, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.society-badge {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(86, 204, 242, 0.16);
+  color: #2f80ed;
+  font-size: 0.8rem;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2f80ed, #56ccf2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.85rem;
+}
+

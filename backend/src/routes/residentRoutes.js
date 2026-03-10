@@ -1,0 +1,53 @@
+const express = require('express');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+const { roleMiddleware } = require('../middlewares/roleMiddleware');
+const db = require('../models');
+
+const router = express.Router();
+
+router.get(
+  '/',
+  authMiddleware,
+  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN', 'ACCOUNTANT']),
+  async (req, res, next) => {
+    try {
+      const residents = await db.Resident.findAll({
+        where: { society_id: req.user.society_id },
+        include: [{ model: db.User, attributes: ['id', 'name', 'email', 'phone', 'is_active'] }],
+        order: [['createdAt', 'DESC']],
+      });
+      res.json(residents);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.post(
+  '/',
+  authMiddleware,
+  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN']),
+  async (req, res, next) => {
+    try {
+      const { user_id, flat_number, wing, is_owner } = req.body;
+      const user = await db.User.findByPk(user_id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      if (user.society_id !== req.user.society_id) {
+        return res.status(403).json({ message: 'Cross-society not allowed' });
+      }
+      const resident = await db.Resident.create({
+        society_id: req.user.society_id,
+        user_id,
+        flat_number,
+        wing,
+        is_owner: Boolean(is_owner),
+      });
+      res.status(201).json(resident);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+module.exports = router;
+

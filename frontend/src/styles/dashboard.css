@@ -1,0 +1,33 @@
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+
+.page-subtitle {
+  margin: 0 0 1.4rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.dashboard-section {
+  margin-top: 1.5rem;
+}
+
+.dashboard-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,0 +1,52 @@
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #f5f7fb 0, #e6ecf9 40%, #f5f7fb 100%);
+}
+
+.sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid rgba(46, 105, 255, 0.08);
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #2f80ed;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 0.75rem;
+  color: #7b8291;
+}
+
+.main-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main-content {
+  padding: 1.25rem 1.75rem 2rem;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+  }
+}
+
