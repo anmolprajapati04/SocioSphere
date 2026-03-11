@@ -24,7 +24,11 @@ async function start() {
     }
     await db.Society.findOrCreate({
       where: { name: 'Skyline Heights' },
-      defaults: { name: 'Skyline Heights', address: 'Demo Address' },
+      defaults: { 
+        name: 'Skyline Heights', 
+        address: 'Demo Address',
+        city: 'Mumbai'
+      },
     });
     await db.Group.findOrCreate({
       where: { society_id: 1, name: 'Society Announcements' },

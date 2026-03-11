@@ -19,7 +19,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
   try {
     const visitor = await db.Visitor.create({
       society_id: req.user.society_id,
-      resident_id: req.user.sub,
+      resident_id: req.user.id,
       name: req.body.name,
       phone: req.body.phone,
       purpose: req.body.purpose,

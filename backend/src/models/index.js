@@ -7,9 +7,7 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.Society = require('./society')(sequelize, Sequelize.DataTypes);
-db.Role = require('./role')(sequelize, Sequelize.DataTypes);
 db.User = require('./user')(sequelize, Sequelize.DataTypes);
-db.MaintenancePlan = require('./maintenancePlan')(sequelize, Sequelize.DataTypes);
 db.MaintenancePayment = require('./maintenancePayment')(sequelize, Sequelize.DataTypes);
 db.Complaint = require('./complaint')(sequelize, Sequelize.DataTypes);
 db.Visitor = require('./visitor')(sequelize, Sequelize.DataTypes);
@@ -21,28 +19,14 @@ db.AuditLog = require('./auditLog')(sequelize, Sequelize.DataTypes);
 db.Resident = require('./resident')(sequelize, Sequelize.DataTypes);
 db.Group = require('./group')(sequelize, Sequelize.DataTypes);
 db.Message = require('./message')(sequelize, Sequelize.DataTypes);
+db.Role = require('./role')(sequelize, Sequelize.DataTypes);
 
-db.Society.hasMany(db.User, { foreignKey: 'society_id' });
-db.User.belongsTo(db.Society, { foreignKey: 'society_id' });
+db.User.hasMany(db.MaintenancePayment, { foreignKey: 'resident_id' });
+db.MaintenancePayment.belongsTo(db.User, { foreignKey: 'resident_id' });
 
-db.Role.hasMany(db.User, { foreignKey: 'role_id' });
-db.User.belongsTo(db.Role, { foreignKey: 'role_id' });
+db.User.hasMany(db.Complaint, { foreignKey: 'resident_id' });
+db.Complaint.belongsTo(db.User, { foreignKey: 'resident_id' });
 
-db.Society.hasMany(db.MaintenancePlan, { foreignKey: 'society_id' });
-db.MaintenancePlan.belongsTo(db.Society, { foreignKey: 'society_id' });
-
-db.MaintenancePlan.hasMany(db.MaintenancePayment, { foreignKey: 'plan_id' });
-db.MaintenancePayment.belongsTo(db.MaintenancePlan, { foreignKey: 'plan_id' });
-db.User.hasMany(db.MaintenancePayment, { foreignKey: 'user_id' });
-db.MaintenancePayment.belongsTo(db.User, { foreignKey: 'user_id' });
-
-db.Society.hasMany(db.Complaint, { foreignKey: 'society_id' });
-db.Complaint.belongsTo(db.Society, { foreignKey: 'society_id' });
-db.User.hasMany(db.Complaint, { foreignKey: 'user_id' });
-db.Complaint.belongsTo(db.User, { foreignKey: 'user_id' });
-
-db.Society.hasMany(db.Visitor, { foreignKey: 'society_id' });
-db.Visitor.belongsTo(db.Society, { foreignKey: 'society_id' });
 db.User.hasMany(db.Visitor, { foreignKey: 'resident_id' });
 db.Visitor.belongsTo(db.User, { foreignKey: 'resident_id' });
 

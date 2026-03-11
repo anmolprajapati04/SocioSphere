@@ -8,7 +8,7 @@ const router = express.Router();
 router.get(
   '/plans',
   authMiddleware,
-  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN', 'ACCOUNTANT']),
+  roleMiddleware(['Admin']),
   async (req, res, next) => {
     try {
       const plans = await db.MaintenancePlan.findAll({
@@ -24,8 +24,8 @@ router.get(
 router.get('/payments', authMiddleware, async (req, res, next) => {
   try {
     const where =
-      req.user.role === 'RESIDENT'
-        ? { society_id: req.user.society_id, user_id: req.user.sub }
+      req.user.role === 'Resident'
+        ? { society_id: req.user.society_id, user_id: req.user.id }
         : { society_id: req.user.society_id };
     const payments = await db.MaintenancePayment.findAll({ where });
     res.json(payments);

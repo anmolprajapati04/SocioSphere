@@ -3,21 +3,21 @@ module.exports = (sequelize, DataTypes) => {
     'Visitor',
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-      society_id: { type: DataTypes.INTEGER, allowNull: false },
+      visitor_name: { type: DataTypes.STRING, allowNull: false },
+      phone: { type: DataTypes.STRING, allowNull: false },
       resident_id: { type: DataTypes.INTEGER, allowNull: false },
-      name: { type: DataTypes.STRING, allowNull: false },
-      phone: { type: DataTypes.STRING },
-      purpose: { type: DataTypes.STRING },
+      entry_time: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+      exit_time: { type: DataTypes.DATE },
       status: {
         type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED', 'IN', 'OUT'),
         defaultValue: 'PENDING',
       },
-      check_in: { type: DataTypes.DATE },
-      check_out: { type: DataTypes.DATE },
     },
     {
       tableName: 'visitors',
       timestamps: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
   );
   return Visitor;

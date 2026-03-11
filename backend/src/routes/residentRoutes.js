@@ -8,7 +8,7 @@ const router = express.Router();
 router.get(
   '/',
   authMiddleware,
-  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN', 'ACCOUNTANT']),
+  roleMiddleware(['Admin']),
   async (req, res, next) => {
     try {
       const residents = await db.Resident.findAll({
@@ -26,7 +26,7 @@ router.get(
 router.post(
   '/',
   authMiddleware,
-  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN']),
+  roleMiddleware(['Admin']),
   async (req, res, next) => {
     try {
       const { user_id, flat_number, wing, is_owner } = req.body;

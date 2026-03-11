@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const JWT_SECRET = process.env.JWT_SECRET || 'sociosphere_secret_key';
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;

@@ -32,52 +32,32 @@ export function AuthProvider({ children }) {
   }, [user, token, societyId, societyName]);
 
   async function login({ email, password }) {
-    // Try backend; fallback to mock if backend unavailable
     try {
       const resp = await api.post('/auth/login', { email, password });
-      setUser(resp.data.user);
-      setToken(resp.data.accessToken);
-      setSocietyId(resp.data.user?.society_id || null);
-      setSocietyName('Skyline Heights');
+      const { user, token } = resp.data;
+      setUser(user);
+      setToken(token);
+      setSocietyId(user?.society_id || null);
+      setSocietyName('SocioSphere Society'); // Placeholder or from user
       return { ok: true };
     } catch (e) {
-      const fakeUser = {
-        id: 1,
-        name: 'Demo User',
-        email,
-        role: email.includes('admin')
-          ? 'SOCIETY_ADMIN'
-          : email.includes('secretary')
-          ? 'ACCOUNTANT'
-          : email.includes('security')
-          ? 'SECURITY_GUARD'
-          : 'RESIDENT',
-        society_id: 1,
-      };
-      setUser(fakeUser);
-      setToken('mock-jwt-token');
-      setSocietyId(1);
-      setSocietyName('Skyline Heights');
-      return { ok: true, mock: true };
+      console.error('Login error:', e);
+      return { ok: false, message: e.response?.data?.message || 'Login failed' };
     }
   }
 
-  async function signup(payload) {
+  async function signup(formData) {
     try {
-      const resp = await api.post('/auth/register', {
-        society_id: 1,
-        name: payload.name,
-        email: payload.email,
-        password: payload.password,
-        role: 'RESIDENT',
-      });
-      setUser(resp.data.user);
-      setToken(resp.data.accessToken);
-      setSocietyId(1);
-      setSocietyName('Skyline Heights');
+      const resp = await api.post('/auth/register', formData);
+      const { user, token } = resp.data;
+      setUser(user);
+      setToken(token);
+      setSocietyId(user?.society_id || null);
+      setSocietyName(formData.society_name || 'SocioSphere Society');
       return { ok: true };
-    } catch {
-      return login(payload);
+    } catch (e) {
+      console.error('Signup error:', e);
+      return { ok: false, message: e.response?.data?.message || 'Signup failed' };
     }
   }
 

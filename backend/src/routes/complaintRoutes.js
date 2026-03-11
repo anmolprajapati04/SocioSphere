@@ -19,7 +19,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
   try {
     const complaint = await db.Complaint.create({
       society_id: req.user.society_id,
-      user_id: req.user.sub,
+      user_id: req.user.id,
       title: req.body.title,
       description: req.body.description,
     });

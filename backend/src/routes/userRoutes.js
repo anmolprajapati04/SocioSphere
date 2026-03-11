@@ -9,7 +9,7 @@ router.get('/me', authMiddleware, me);
 router.get(
   '/',
   authMiddleware,
-  roleMiddleware(['SUPER_ADMIN', 'SOCIETY_ADMIN', 'ACCOUNTANT']),
+  roleMiddleware(['Admin']),
   listResidents
 );
 
