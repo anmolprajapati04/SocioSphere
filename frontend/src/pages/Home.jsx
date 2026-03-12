@@ -44,12 +44,13 @@ const Home = () => {
   }, []);
 
   const features = [
-    { title: 'Visitor Management', icon: Users, desc: 'Digital approvals & secure entry logs.', color: 'gold' },
-    { title: 'Maintenance Payments', icon: CreditCard, desc: 'Seamless one-click bill settlement.', color: 'primary' },
-    { title: 'Complaint Tracking', icon: MessageSquare, desc: 'Efficient resolution workflow.', color: 'emerald' },
-    { title: 'Amenity Booking', icon: Calendar, desc: 'Reserve clubhouses & pools instantly.', color: 'gold' },
-    { title: 'Society Notices', icon: Bell, desc: 'Real-time broadcast to all residents.', color: 'primary' },
-    { title: 'Community Chat', icon: ShieldCheck, desc: 'Private networking for your society.', color: 'emerald' },
+    { title: 'Visitor Management', icon: Users, desc: 'Digital approvals & secure entry logs.', color: 'gold', route: '/visitors' },
+    { title: 'Maintenance Payments', icon: CreditCard, desc: 'Seamless one-click bill settlement.', color: 'primary', route: '/maintenance' },
+    { title: 'Complaint Tracking', icon: MessageSquare, desc: 'Efficient resolution workflow.', color: 'emerald', route: '/complaints' },
+    { title: 'Amenity Booking', icon: Calendar, desc: 'Reserve clubhouses & pools instantly.', color: 'gold', route: '/amenities' },
+    { title: 'Society Notices', icon: Bell, desc: 'Real-time broadcast to all residents.', color: 'primary', route: '/notices' },
+    { title: 'Community Chat', icon: ShieldCheck, desc: 'Real-time broadcast to all residents.', color: 'emerald', route: '/chat' },
+    { title: 'Private Networking', icon: Users, desc: 'Private networking for your society.', color: 'gold', route: '/directory' },
   ];
 
   const galleryItems = [
@@ -69,43 +70,37 @@ const Home = () => {
   return (
     <div className="bg-white selection:bg-elegant-gold/30 overflow-x-hidden">
       {/* Premium Navbar */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-700 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-3xl py-3 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border-b border-primary-900/5' : 'bg-transparent py-8'
-      }`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-700 bg-white/95 backdrop-blur-3xl py-3 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border-b border-slate-200`}>
         <div className="container mx-auto px-10 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
+            <div className="w-12 h-12 bg-primary-900 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
                <ShieldCheck className="w-7 h-7 text-elegant-gold" />
             </div>
             <div className="flex flex-col">
-              <span className={`text-2xl font-black tracking-tighter leading-none transition-colors duration-500 ${isScrolled ? 'text-primary-900' : 'text-white'}`}>
+              <span className="text-2xl font-black tracking-tighter leading-none transition-colors duration-500 text-primary-900">
                  SOCIO<span className="text-elegant-gold">SPHERE</span>
               </span>
-              <span className={`text-[10px] font-bold tracking-[0.3em] uppercase transition-opacity duration-500 ${isScrolled ? 'text-primary-400' : 'text-elegant-gold/60'}`}>Platinum Living</span>
+              <span className="text-[10px] font-bold tracking-[0.3em] uppercase transition-opacity duration-500 text-slate-400">Platinum Living</span>
             </div>
           </Link>
 
           <div className="hidden lg:flex items-center gap-12">
             {['Services', 'Gallery', 'About'].map(item => (
-               <a key={item} href={`#${item.toLowerCase()}`} className={`text-xs font-black uppercase tracking-[0.2em] hover:text-elegant-gold transition-all duration-300 relative group py-2 ${
-                 isScrolled ? 'text-primary-900' : 'text-white/90'
-               }`}>
+               <a key={item} href={`#${item.toLowerCase()}`} className="text-xs font-black uppercase tracking-[0.2em] hover:text-elegant-gold transition-all duration-300 relative group py-2 text-primary-900">
                  {item}
                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-elegant-gold transition-all duration-300 group-hover:w-full" />
                </a>
             ))}
-            <div className={`h-6 w-px transition-colors duration-500 ${isScrolled ? 'bg-slate-200' : 'bg-white/20'}`} />
+            <div className="h-6 w-px transition-colors duration-500 bg-slate-200" />
             {isAuthenticated ? (
                <Link to={`/${user?.role?.toLowerCase()}`}>
-                  <Button className="bg-primary-900 text-white border-none shadow-2xl hover:scale-105 px-8">MY CONSOLE</Button>
+                  <Button className="bg-primary-900 text-white border-none shadow-xl hover:scale-105 px-8">MY CONSOLE</Button>
                </Link>
             ) : (
                <div className="flex items-center gap-6">
-                  <Link to="/login" className={`text-xs font-black uppercase tracking-[0.2em] hover:text-elegant-gold transition-colors duration-300 ${
-                    isScrolled ? 'text-primary-900' : 'text-white'
-                  }`}>Login</Link>
+                  <Link to="/login" className="text-xs font-black uppercase tracking-[0.2em] text-primary-900 hover:text-elegant-gold transition-colors duration-300">Login</Link>
                   <Link to="/signup">
-                    <Button className="bg-elegant-gold text-primary-900 border-none font-black px-8 h-12 hover:shadow-[0_0_30px_-5px_#FACC15]">REGISTER</Button>
+                    <Button className="bg-elegant-gold text-primary-900 border-none font-black px-8 h-12 hover:shadow-[0_0_20px_-5px_#FACC15]">REGISTER</Button>
                   </Link>
                </div>
             )}
@@ -205,34 +200,36 @@ const Home = () => {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
                {features.map((f, i) => (
-                  <Card key={i} delay={i * 0.1} className="luxury-card group p-10">
-                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 transition-all group-hover:scale-110 group-hover:rotate-6 
-                        ${f.color === 'gold' ? 'bg-elegant-gold/10 text-elegant-gold' : ''}
-                        ${f.color === 'primary' ? 'bg-primary-900/10 text-primary-900' : ''}
-                        ${f.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500' : ''}
-                     `}>
-                        <f.icon className="w-8 h-8" />
-                     </div>
-                     <h4 className="text-2xl font-black text-primary-900 mb-4 tracking-tighter">{f.title}</h4>
-                     <p className="text-slate-500 font-medium leading-relaxed mb-6">{f.desc}</p>
-                     <div className="flex items-center gap-2 text-primary-900 font-bold text-sm tracking-widest group-hover:gap-3 transition-all cursor-pointer">
-                        LEARN MORE <ArrowRight className="w-4 h-4" />
-                     </div>
-                  </Card>
+                  <Link key={i} to={f.route}>
+                    <Card delay={i * 0.1} className="luxury-card group p-10 h-full">
+                       <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 transition-all group-hover:scale-110 group-hover:rotate-6 
+                          ${f.color === 'gold' ? 'bg-elegant-gold/10 text-elegant-gold' : ''}
+                          ${f.color === 'primary' ? 'bg-primary-900/10 text-primary-900' : ''}
+                          ${f.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500' : ''}
+                       `}>
+                          <f.icon className="w-8 h-8" />
+                       </div>
+                       <h4 className="text-2xl font-black text-primary-900 mb-4 tracking-tighter">{f.title}</h4>
+                       <p className="text-slate-500 font-medium leading-relaxed mb-6">{f.desc}</p>
+                       <div className="flex items-center gap-2 text-primary-900 font-bold text-sm tracking-widest group-hover:gap-3 transition-all cursor-pointer">
+                          ACCESS SERVICE <ArrowRight className="w-4 h-4" />
+                       </div>
+                    </Card>
+                  </Link>
                ))}
             </div>
          </div>
       </section>
 
       {/* Gallery Section */}
-      <section id="gallery" className="py-32 bg-primary-900">
+      <section id="gallery" className="py-32 bg-slate-100 items-center justify-center w-full">
          <div className="container mx-auto px-10">
             <div className="flex flex-col lg:flex-row justify-between items-end gap-10 mb-20">
                <div className="max-w-2xl">
                   <span className="text-elegant-gold font-black tracking-widest text-xs uppercase mb-4 block">Visual Journey</span>
-                  <h2 className="text-5xl font-black text-white tracking-tighter">Luxury is in the Details</h2>
+                  <h2 className="text-5xl font-black text-primary-900 tracking-tighter">Luxury is in the Details</h2>
                </div>
-               <Button className="bg-elegant-gold text-primary-900 font-black tracking-widest border-none">VIEW ALL SPACES</Button>
+               <Button className="bg-primary-900 text-white font-black tracking-widest border-none">VIEW ALL SPACES</Button>
             </div>
 
             <div className="grid md:grid-cols-4 gap-6">
@@ -243,10 +240,10 @@ const Home = () => {
                     className="relative rounded-3xl overflow-hidden aspect-[3/4] group cursor-pointer"
                   >
                      <img src={item.img} alt={item.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                     <div className="absolute inset-0 bg-gradient-to-t from-primary-900 via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
-                     <div className="absolute bottom-8 left-8">
-                        <span className="text-elegant-gold text-[10px] font-black tracking-widest uppercase mb-2 block">{item.tag}</span>
-                        <h5 className="text-xl font-bold text-white tracking-tight">{item.title}</h5>
+                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
+                     <div className="absolute bottom-8 left-8 z-10">
+                        <span className="text-elegant-gold drop-shadow-md text-[10px] font-black tracking-widest uppercase mb-2 block">{item.tag}</span>
+                        <h5 className="text-xl font-bold text-white drop-shadow-md tracking-tight">{item.title}</h5>
                      </div>
                   </motion.div>
                ))}
@@ -311,7 +308,7 @@ const Home = () => {
       </section>
 
       {/* Premium Footer */}
-      <footer className="bg-primary-900 border-t border-white/5 relative overflow-hidden">
+      <footer className="bg-slate-100 border-t border-slate-200 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-elegant-gold/50 to-transparent" />
         
         <div className="container mx-auto px-10 pt-32 pb-20">
@@ -319,19 +316,19 @@ const Home = () => {
             {/* Column 1: Brand */}
             <div className="col-span-1 lg:col-span-1">
               <Link to="/" className="flex items-center gap-3 mb-8 group w-fit">
-                <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center transition-all group-hover:bg-elegant-gold/10 group-hover:border-elegant-gold/20">
+                <div className="w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center transition-all shadow-md group-hover:bg-elegant-gold/10 group-hover:border-elegant-gold/20">
                   <ShieldCheck className="w-7 h-7 text-elegant-gold" />
                 </div>
-                <span className="text-2xl font-black text-white tracking-tighter">
+                <span className="text-2xl font-black text-primary-900 tracking-tighter">
                   SOCIO<span className="text-elegant-gold">SPHERE</span>
                 </span>
               </Link>
-              <p className="text-white/70 font-medium leading-relaxed mb-10">
+              <p className="text-slate-600 font-medium leading-relaxed mb-10">
                 Redefining modern community living with premium security and seamless management solutions. The platinum standard in residential excellence.
               </p>
               <div className="flex gap-4">
                 {['facebook', 'twitter', 'linkedin', 'instagram'].map(platform => (
-                  <div key={platform} className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-elegant-gold hover:border-elegant-gold/30 hover:bg-elegant-gold/5 transition-all cursor-pointer">
+                  <div key={platform} className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-400 hover:text-elegant-gold hover:border-elegant-gold/30 hover:bg-elegant-gold/5 transition-all cursor-pointer">
                     <Activity className="w-4 h-4" />
                   </div>
                 ))}
@@ -340,11 +337,11 @@ const Home = () => {
 
             {/* Column 2: Navigation */}
             <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-10">Exploration</h4>
+              <h4 className="text-primary-900 font-black uppercase tracking-[0.2em] text-xs mb-10">Exploration</h4>
               <ul className="space-y-4">
                 {['Services', 'Gallery', 'About Us', 'Contact', 'Privacy Policy'].map(link => (
                   <li key={link}>
-                    <a href="#" className="text-white font-bold text-sm hover:text-elegant-gold flex items-center gap-2 group transition-all duration-300">
+                    <a href="#" className="text-slate-600 font-bold text-sm hover:text-elegant-gold flex items-center gap-2 group transition-all duration-300">
                       <ChevronRight className="w-3 h-3 text-elegant-gold opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
                       <span className="group-hover:translate-x-1 transition-transform">{link}</span>
                     </a>
@@ -355,13 +352,13 @@ const Home = () => {
 
             {/* Column 3: Contact */}
             <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-10">Headquarters</h4>
+              <h4 className="text-primary-900 font-black uppercase tracking-[0.2em] text-xs mb-10">Headquarters</h4>
               <div className="space-y-6">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 rounded-xl bg-elegant-gold/10 flex-shrink-0 flex items-center justify-center text-elegant-gold">
                     <Activity className="w-4 h-4" />
                   </div>
-                  <p className="text-white/80 font-medium text-sm leading-relaxed">
+                  <p className="text-slate-600 font-medium text-sm leading-relaxed">
                     101 Luxury Tower, Platinum District,<br />
                     Mumbai, MH 400001
                   </p>
@@ -370,7 +367,7 @@ const Home = () => {
                   <div className="w-10 h-10 rounded-xl bg-elegant-gold/10 flex-shrink-0 flex items-center justify-center text-elegant-gold">
                     <Activity className="w-4 h-4" />
                   </div>
-                  <p className="text-white/80 font-medium text-sm">
+                  <p className="text-slate-600 font-medium text-sm">
                     contact@sociosphere.platinum<br />
                     +91 1800-SOCIO-SAFE
                   </p>
@@ -380,30 +377,30 @@ const Home = () => {
 
             {/* Column 4: Newsletter */}
             <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-10">Platinum Insights</h4>
-              <p className="text-white/70 font-medium text-sm mb-8 leading-relaxed">
+              <h4 className="text-primary-900 font-black uppercase tracking-[0.2em] text-xs mb-10">Platinum Insights</h4>
+              <p className="text-slate-600 font-medium text-sm mb-8 leading-relaxed">
                 Subscribe to receive community updates and luxury lifestyle news.
               </p>
               <div className="relative">
                 <input 
                   type="email" 
                   placeholder="Your Email Address" 
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl h-14 pl-6 pr-16 text-white font-medium focus:ring-2 ring-elegant-gold/20 outline-none transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-2xl h-14 pl-6 pr-16 text-slate-900 font-medium focus:ring-2 ring-elegant-gold/20 outline-none transition-all shadow-sm"
                 />
-                <button className="absolute right-2 top-2 h-10 w-10 bg-elegant-gold rounded-xl flex items-center justify-center text-primary-900 shadow-lg hover:scale-105 transition-transform">
+                <button className="absolute right-2 top-2 h-10 w-10 bg-elegant-gold rounded-xl flex items-center justify-center text-primary-900 shadow-md hover:scale-105 transition-transform">
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="pt-12 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-8">
             <p className="text-slate-500 font-bold text-[10px] tracking-widest uppercase">
               &copy; 2026 SocioSphere Platinum Platforms Inc. All Rights Reserved.
             </p>
             <div className="flex gap-8">
-              <span className="text-slate-500 font-bold text-[10px] tracking-widest uppercase cursor-pointer hover:text-white transition-colors">Terms of Service</span>
-              <span className="text-slate-500 font-bold text-[10px] tracking-widest uppercase cursor-pointer hover:text-white transition-colors">Cookie Policy</span>
+              <span className="text-slate-500 font-bold text-[10px] tracking-widest uppercase cursor-pointer hover:text-primary-900 transition-colors">Terms of Service</span>
+              <span className="text-slate-500 font-bold text-[10px] tracking-widest uppercase cursor-pointer hover:text-primary-900 transition-colors">Cookie Policy</span>
             </div>
           </div>
         </div>

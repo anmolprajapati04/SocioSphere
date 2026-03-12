@@ -13,7 +13,7 @@ router.get(
     try {
       const residents = await db.Resident.findAll({
         where: { society_id: req.user.society_id },
-        include: [{ model: db.User, attributes: ['id', 'name', 'email', 'phone', 'is_active'] }],
+        include: [{ model: db.User, attributes: ['id', 'name', 'email', 'phone'] }],
         order: [['createdAt', 'DESC']],
       });
       res.json(residents);
@@ -48,6 +48,28 @@ router.post(
     }
   }
 );
+
+router.put('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, next) => {
+  try {
+    const resident = await db.Resident.findOne({ where: { id: req.params.id, society_id: req.user.society_id } });
+    if (!resident) return res.status(404).json({ message: 'Resident not found' });
+    await resident.update(req.body);
+    res.json(resident);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, next) => {
+  try {
+    const resident = await db.Resident.findOne({ where: { id: req.params.id, society_id: req.user.society_id } });
+    if (!resident) return res.status(404).json({ message: 'Resident not found' });
+    await resident.destroy();
+    res.json({ message: 'Resident removed' });
+  } catch (e) {
+    next(e);
+  }
+});
 
 module.exports = router;
 

@@ -10,6 +10,7 @@ import AmenitiesPage from '../pages/AmenitiesPage';
 import NoticesPage from '../pages/NoticesPage';
 import SettingsPage from '../pages/SettingsPage';
 import ChatPage from '../pages/ChatPage';
+import ResidentDirectory from '../pages/ResidentDirectory';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
 import Home from '../pages/Home';
@@ -75,7 +76,26 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Add other sub-routes as needed, or keep them generic if they apply to all */}
+      <Route
+        path="/visitors"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <VisitorsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/directory"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ResidentDirectory />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/complaints"
         element={
@@ -86,7 +106,46 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* ... other routes ... */}
+      <Route
+        path="/maintenance"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <MaintenancePage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/amenities"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <AmenitiesPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notices"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <NoticesPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ChatPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

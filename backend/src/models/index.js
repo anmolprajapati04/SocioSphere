@@ -23,12 +23,21 @@ db.Role = require('./role')(sequelize, Sequelize.DataTypes);
 
 db.User.hasMany(db.MaintenancePayment, { foreignKey: 'resident_id' });
 db.MaintenancePayment.belongsTo(db.User, { foreignKey: 'resident_id' });
+db.MaintenancePayment.belongsTo(db.User, { foreignKey: 'resident_id', as: 'Resident' });
+
+db.Society.hasMany(db.MaintenancePayment, { foreignKey: 'society_id' });
+db.MaintenancePayment.belongsTo(db.Society, { foreignKey: 'society_id' });
 
 db.User.hasMany(db.Complaint, { foreignKey: 'resident_id' });
 db.Complaint.belongsTo(db.User, { foreignKey: 'resident_id' });
 
-db.User.hasMany(db.Visitor, { foreignKey: 'resident_id' });
+db.Society.hasMany(db.Complaint, { foreignKey: 'society_id' });
+db.Complaint.belongsTo(db.Society, { foreignKey: 'society_id' });
+
 db.Visitor.belongsTo(db.User, { foreignKey: 'resident_id' });
+
+db.Society.hasMany(db.Visitor, { foreignKey: 'society_id' });
+db.Visitor.belongsTo(db.Society, { foreignKey: 'society_id' });
 
 db.Society.hasMany(db.Notice, { foreignKey: 'society_id' });
 db.Notice.belongsTo(db.Society, { foreignKey: 'society_id' });

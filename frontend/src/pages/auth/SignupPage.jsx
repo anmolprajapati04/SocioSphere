@@ -34,12 +34,16 @@ const SignupPage = () => {
     setError('');
     try {
       const response = await signup(formData);
-      const role = response.user.role;
-      if (role === 'Admin') navigate('/admin');
-      else if (role === 'Security') navigate('/security');
-      else navigate('/resident');
+      if (response.ok) {
+        const role = response.user.role;
+        if (role === 'Admin') navigate('/admin');
+        else if (role === 'Security') navigate('/security');
+        else navigate('/resident');
+      } else {
+        setError(response.message || 'Registration failed. Please try again.');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -87,25 +91,41 @@ const SignupPage = () => {
         </motion.div>
 
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
           className="lg:col-span-3"
         >
-          <div className="luxury-card p-10 bg-white">
-            <div className="flex justify-between items-center mb-10">
+          <div className="p-12 bg-white border border-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.05)] rounded-[3rem]">
+            <div className="flex justify-between items-center mb-12">
               <div>
-                <h2 className="text-3xl font-black text-primary-900 tracking-tighter">Membership Request</h2>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">Step {step} of 2</p>
+                <motion.h2 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-4xl font-black text-primary-900 tracking-tighter"
+                >
+                  Membership Request
+                </motion.h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2">Stage {step} of 2 • Secure Processing</p>
               </div>
-              <div className="w-14 h-14 bg-primary-900 rounded-2xl flex items-center justify-center shadow-xl">
-                <ShieldCheck className="w-8 h-8 text-elegant-gold" />
-              </div>
+              <motion.div 
+                whileHover={{ rotate: 15 }}
+                className="w-20 h-20 bg-primary-900 rounded-[2rem] flex items-center justify-center shadow-2xl"
+              >
+                <ShieldCheck className="w-10 h-10 text-elegant-gold" />
+              </motion.div>
             </div>
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl mb-8">
-                <p className="text-red-600 text-sm font-bold text-center">{error}</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-4 bg-red-50 border border-red-100 rounded-2xl mb-8"
+              >
+                <p className="text-red-600 text-sm font-bold text-center flex items-center justify-center gap-2">
+                   <AlertCircle className="w-4 h-4" /> {error}
+                </p>
+              </motion.div>
             )}
 
             <form onSubmit={handleSubmit}>
@@ -113,60 +133,62 @@ const SignupPage = () => {
                 {step === 1 ? (
                   <motion.div 
                     key="step1"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
+                    exit={{ opacity: 0, x: -40 }}
+                    className="space-y-8"
                   >
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Input label="Full Name" name="name" icon={User} placeholder="Sarah Jenkins" value={formData.name} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
-                      <Input label="Email Address" name="email" type="email" icon={Mail} placeholder="sarah@example.com" value={formData.email} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <Input label="Full Name" name="name" icon={User} placeholder="Sarah Jenkins" value={formData.name} onChange={handleChange} required className="h-16" />
+                      <Input label="Email Address" name="email" type="email" icon={Mail} placeholder="sarah@example.com" value={formData.email} onChange={handleChange} required className="h-16" />
                     </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Input label="Mobile Number" name="phone" icon={Phone} placeholder="+91 98765 43210" value={formData.phone} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
-                      <Input label="Security Password" name="password" type="password" icon={Lock} placeholder="••••••••" value={formData.password} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <Input label="Mobile Number" name="phone" icon={Phone} placeholder="+91 98765 43210" value={formData.phone} onChange={handleChange} required className="h-16" />
+                      <Input label="Security Password" name="password" type="password" icon={Lock} placeholder="••••••••" value={formData.password} onChange={handleChange} required className="h-16" />
                     </div>
                     <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Select Community Role</label>
-                      <div className="grid grid-cols-3 gap-4">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 ml-1">Select Community Tier</label>
+                      <div className="grid grid-cols-3 gap-6">
                         {['Resident', 'Admin', 'Security'].map(r => (
-                          <button
+                          <motion.button
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             key={r}
                             type="button"
                             onClick={() => setFormData({ ...formData, role: r })}
-                            className={`h-14 rounded-xl border-2 font-black text-xs tracking-widest transition-all ${
-                              formData.role === r ? 'bg-primary-900 border-primary-900 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:border-elegant-gold'
+                            className={`h-16 rounded-2xl border-2 font-black text-xs tracking-[0.2em] transition-all duration-300 ${
+                              formData.role === r ? 'bg-primary-900 border-primary-900 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-elegant-gold/50'
                             }`}
                           >
                             {r.toUpperCase()}
-                          </button>
+                          </motion.button>
                         ))}
                       </div>
                     </div>
-                    <Button type="button" onClick={nextStep} className="w-full bg-elegant-gold text-primary-900 font-black h-16 rounded-2xl border-none shadow-2xl flex items-center justify-center gap-3">
-                      CONTINUE TO SOCIETY DETAILS <ArrowRight className="w-5 h-5" />
+                    <Button type="button" onClick={nextStep} className="w-full bg-elegant-gold text-primary-900 font-black h-18 rounded-3xl border-none shadow-[0_15px_30px_rgba(250,204,21,0.2)] flex items-center justify-center gap-4 group mt-4">
+                      PROCEED TO SOCIETY PROTOCOLS <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </motion.div>
                 ) : (
                   <motion.div 
                     key="step2"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
+                    exit={{ opacity: 0, x: -40 }}
+                    className="space-y-8"
                   >
-                    <Input label="Society Name" name="society_name" icon={Building2} placeholder="Royal Palms Residency" value={formData.society_name} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
-                    <Input label="Society Address" name="society_address" icon={MapPin} placeholder="Main Street, Highview Area" value={formData.society_address} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Input label="City" name="city" icon={MapPin} placeholder="Mumbai" value={formData.city} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
-                      <Input label="Flat / Unit Number" name="flat_number" icon={Home} placeholder="A-1204" value={formData.flat_number} onChange={handleChange} required className="h-14 font-medium border-slate-100" />
+                    <Input label="Society Name" name="society_name" icon={Building2} placeholder="Royal Palms Residency" value={formData.society_name} onChange={handleChange} required className="h-16" />
+                    <Input label="Society Address" name="society_address" icon={MapPin} placeholder="Main Street, Highview Area" value={formData.society_address} onChange={handleChange} required className="h-16" />
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <Input label="City" name="city" icon={MapPin} placeholder="Mumbai" value={formData.city} onChange={handleChange} required className="h-16" />
+                      <Input label="Flat / Unit Number" name="flat_number" icon={Home} placeholder="A-1204" value={formData.flat_number} onChange={handleChange} required className="h-16" />
                     </div>
-                    <div className="flex gap-6">
-                      <Button type="button" onClick={prevStep} variant="outline" className="h-16 px-8 rounded-2xl border-slate-100 text-slate-400">
-                        <ArrowLeft className="w-5 h-5" />
+                    <div className="flex gap-6 pt-4">
+                      <Button type="button" onClick={prevStep} variant="outline" className="h-18 px-10 rounded-2xl border-slate-100 text-slate-400 hover:text-primary-900 hover:border-primary-900 transition-all">
+                        <ArrowLeft className="w-6 h-6" />
                       </Button>
-                      <Button type="submit" disabled={isLoading} className="flex-1 bg-primary-900 text-white font-black h-16 rounded-2xl border-none shadow-2xl flex items-center justify-center gap-3">
-                        {isLoading ? <div className="w-6 h-6 border-4 border-elegant-gold border-t-transparent rounded-full animate-spin" /> : 'COMPLETE REGISTRATION'}
+                      <Button type="submit" disabled={isLoading} className="flex-1 bg-primary-900 text-white font-black h-18 rounded-3xl border-none shadow-[0_15px_30px_rgba(15,23,42,0.3)] flex items-center justify-center gap-4">
+                        {isLoading ? <div className="w-7 h-7 border-4 border-elegant-gold border-t-transparent rounded-full animate-spin" /> : 'CONFIRM MEMBERSHIP'}
                       </Button>
                     </div>
                   </motion.div>

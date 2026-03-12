@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
       setToken(token);
       setSocietyId(user?.society_id || null);
       setSocietyName('SocioSphere Society'); // Placeholder or from user
-      return { ok: true };
+      return { ok: true, user };
     } catch (e) {
       console.error('Login error:', e);
       return { ok: false, message: e.response?.data?.message || 'Login failed' };
@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
       setToken(token);
       setSocietyId(user?.society_id || null);
       setSocietyName(formData.society_name || 'SocioSphere Society');
-      return { ok: true };
+      return { ok: true, user };
     } catch (e) {
       console.error('Signup error:', e);
       return { ok: false, message: e.response?.data?.message || 'Signup failed' };

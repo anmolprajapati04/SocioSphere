@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       resident_id: { type: DataTypes.INTEGER, allowNull: false },
+      society_id: { type: DataTypes.INTEGER, allowNull: false },
       amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
       status: { type: DataTypes.ENUM('PENDING', 'PAID', 'OVERDUE'), defaultValue: 'PENDING' },
       payment_date: { type: DataTypes.DATE },

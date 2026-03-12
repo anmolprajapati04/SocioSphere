@@ -12,9 +12,9 @@ router.get('/', authMiddleware, async (req, res, next) => {
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    const [residentsCount, revenueSum, complaintsByStatus, visitorsToday, defaultersCount] =
+    const [residentsCount, revenueSum, complaintsByStatus, visitorsToday, defaultersCount, totalComplaints] =
       await Promise.all([
-        db.Resident ? db.Resident.count({ where: { society_id: societyId } }) : db.User.count({ where: { society_id: societyId } }),
+        db.Resident ? db.Resident.count({ where: { society_id: societyId } }) : db.User.count({ where: { society_id: societyId, role: 'Resident' } }),
         db.MaintenancePayment.sum('amount', {
           where: { society_id: societyId, status: 'PAID' },
         }),
@@ -26,12 +26,13 @@ router.get('/', authMiddleware, async (req, res, next) => {
         db.Visitor.count({
           where: {
             society_id: societyId,
-            createdAt: { [db.Sequelize.Op.between]: [startOfToday, endOfToday] },
+            created_at: { [db.Sequelize.Op.between]: [startOfToday, endOfToday] },
           },
         }),
         db.MaintenancePayment.count({
           where: { society_id: societyId, status: 'OVERDUE' },
         }),
+        db.Complaint.count({ where: { society_id: societyId } })
       ]);
 
     res.json({
@@ -40,7 +41,38 @@ router.get('/', authMiddleware, async (req, res, next) => {
       complaintStats: complaintsByStatus,
       visitorAnalytics: { today: visitorsToday },
       paymentDefaulters: defaultersCount,
+      totalComplaints,
+      society_id: societyId,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/growth', authMiddleware, async (req, res, next) => {
+  try {
+    const societyId = req.user.society_id;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const payments = await db.MaintenancePayment.findAll({
+      where: {
+        society_id: societyId,
+        status: 'PAID',
+        created_at: { [db.Sequelize.Op.gte]: sixMonthsAgo }
+      },
+      attributes: [
+        [db.Sequelize.fn('MONTHNAME', db.Sequelize.col('created_at')), 'month'],
+        [db.Sequelize.fn('SUM', db.Sequelize.col('amount')), 'total']
+      ],
+      group: [
+        db.Sequelize.fn('MONTHNAME', db.Sequelize.col('created_at')),
+        db.Sequelize.fn('MONTH', db.Sequelize.col('created_at'))
+      ],
+      order: [[db.Sequelize.fn('MONTH', db.Sequelize.col('created_at')), 'ASC']]
+    });
+
+    res.json(payments);
   } catch (err) {
     next(err);
   }

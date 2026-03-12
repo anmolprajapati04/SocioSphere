@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
       visitor_name: { type: DataTypes.STRING, allowNull: false },
       phone: { type: DataTypes.STRING, allowNull: false },
       resident_id: { type: DataTypes.INTEGER, allowNull: false },
+      society_id: { type: DataTypes.INTEGER, allowNull: false },
       entry_time: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
       exit_time: { type: DataTypes.DATE },
       status: {

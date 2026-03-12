@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       society_id: { type: DataTypes.INTEGER, allowNull: false },
+      created_by: { type: DataTypes.INTEGER, allowNull: false },
       title: { type: DataTypes.STRING, allowNull: false },
       content: { type: DataTypes.TEXT, allowNull: false },
       valid_from: { type: DataTypes.DATE },

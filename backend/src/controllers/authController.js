@@ -19,8 +19,9 @@ async function register(req, res, next) {
     }
 
     // Assign society
-    let societyId = null;
-    if (society_name) {
+    let societyId = req.user?.society_id || req.body.society_id || null;
+    
+    if (!societyId && society_name) {
       const [society] = await db.Society.findOrCreate({
         where: { name: society_name },
         defaults: { name: society_name, address: society_address || 'Pending Address', city: city || 'Pending City' }
@@ -39,6 +40,16 @@ async function register(req, res, next) {
       flat_number
     });
 
+    if (role === 'Resident') {
+      await db.Resident.create({
+        user_id: user.id,
+        society_id: societyId,
+        flat_number: flat_number || 'N/A',
+        wing: req.body.wing || 'A',
+        is_owner: req.body.is_owner !== false
+      });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, society_id: user.society_id },
       JWT_SECRET,
@@ -46,8 +57,7 @@ async function register(req, res, next) {
     );
 
     return res.status(201).json({
-      message: 'User registered successfully',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
       token
     });
   } catch (err) {
@@ -81,7 +91,7 @@ async function login(req, res, next) {
 
     return res.json({
       message: 'Login successful',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
       token
     });
   } catch (err) {

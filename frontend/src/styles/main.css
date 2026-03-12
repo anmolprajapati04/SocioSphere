@@ -1,69 +1,64 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #f8fafc;
-  --color-primary-100: #f1f5f9;
-  --color-primary-200: #e2e8f0;
-  --color-primary-300: #cbd5e1;
-  --color-primary-400: #94a3b8;
-  --color-primary-500: #64748b;
+  --color-primary-50: #F8FAFC;
+  --color-primary-100: #F1F5F9;
+  --color-primary-200: #E2E8F0;
+  --color-primary-300: #CBD5E1;
+  --color-primary-400: #94A3B8;
+  --color-primary-500: #64748B;
   --color-primary-600: #475569;
   --color-primary-700: #334155;
-  --color-primary-800: #1e293b;
-  --color-primary-900: #0f172a; /* Deep Royal Blue */
-
-  --color-gold-50: #fffbeb;
-  --color-gold-100: #fef3c7;
-  --color-gold-200: #fde68a;
-  --color-gold-300: #fcd34d;
-  --color-gold-400: #fbbf24;
-  --color-gold-500: #f59e0b;
-  --color-gold-600: #d97706;
-  --color-gold-700: #b45309;
-  --color-gold-800: #92400e;
-  --color-gold-900: #78350f;
-  --color-elegant-gold: #FACC15;
+  --color-primary-800: #1E293B;
+  --color-primary-900: #020617; /* Deepest Midnight */
+  
+  --color-slate-950: #0A0C12; /* Charcoal Base */
+  --color-slate-900: #0F172A;
+  
+  --color-gold-500: #D4AF37; /* Metallic Gold */
+  --color-gold-600: #B8860B;
+  --color-elegant-gold: #D4AF37;
 
   --color-emerald-500: #10B981;
+  --color-rose-500: #F43F5E;
 
-  --animate-gradient-x: gradient-x 15s ease infinite;
-  --animate-fade-in: fade-in 0.5s ease-out;
-  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-gradient-pulse: gradient-pulse 8s ease infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
 
-  @keyframes gradient-x {
-    0%, 100% { background-size: 200% 200%; background-position: left center; }
-    50% { background-size: 200% 200%; background-position: right center; }
+  @keyframes gradient-pulse {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
-  @keyframes fade-in {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-  @keyframes slide-up {
-    0% { transform: translateY(20px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-primary-900 font-sans selection:bg-gold-500/30;
+    @apply bg-slate-50 text-slate-800 font-sans selection:bg-elegant-gold/30;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl;
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)];
   }
   
   .luxury-card {
-    @apply bg-white border border-slate-100 rounded-3xl shadow-2xl transition-all hover:shadow-gold-500/10 hover:border-gold-500/20;
+    @apply bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 hover:border-elegant-gold/30 hover:shadow-[0_20px_50px_rgba(212,175,55,0.1)];
   }
 
   .text-gradient-gold {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-600 to-gold-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-elegant-gold via-gold-600 to-elegant-gold bg-[length:200%_auto] animate-gradient-pulse;
   }
 
-  .text-luxury {
-    @apply font-bold tracking-tight text-primary-900;
+  .btn-luxury {
+    @apply px-8 py-4 bg-primary-900 text-white font-black rounded-2xl shadow-lg shadow-primary-900/20 hover:scale-105 active:scale-95 transition-all duration-300 hover:bg-elegant-gold hover:text-primary-900;
+  }
+  
+  .input-luxury {
+    @apply w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-800 focus:ring-2 ring-elegant-gold/20 transition-all outline-none;
   }
 }
