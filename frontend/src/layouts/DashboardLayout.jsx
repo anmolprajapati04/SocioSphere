@@ -14,7 +14,8 @@ import {
   X,
   User as UserIcon,
   Search,
-  Calendar
+  Calendar,
+  ChevronLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/cn';
