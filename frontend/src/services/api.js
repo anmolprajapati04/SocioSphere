@@ -1,3 +1,5 @@
+// Service layer handling API communication with backend
+// Improves separation between UI and data logic
 import axios from 'axios';
 
 const api = axios.create({

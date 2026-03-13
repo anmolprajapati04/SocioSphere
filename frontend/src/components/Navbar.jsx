@@ -1,3 +1,5 @@
+// UI component responsible for rendering part of the interface
+// Added comments to improve code readability
 import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/navbar.css';
 

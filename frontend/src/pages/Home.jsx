@@ -85,27 +85,32 @@ const Home = () => {
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-12">
+          <div className="hidden lg:flex items-center gap-4">
             {['Services', 'Gallery', 'About'].map(item => (
-               <a key={item} href={`#${item.toLowerCase()}`} className={`text-xs font-black uppercase tracking-[0.2em] hover:text-elegant-gold transition-all duration-300 relative group py-2 ${
-                 isScrolled ? 'text-primary-900' : 'text-white/90'
+               <a key={item} href={`#${item.toLowerCase()}`} className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-md ${
+                 isScrolled 
+                   ? 'bg-slate-100 hover:bg-slate-200 text-primary-900' 
+                   : 'bg-white text-primary-900 hover:bg-slate-100'
                }`}>
                  {item}
-                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-elegant-gold transition-all duration-300 group-hover:w-full" />
                </a>
             ))}
-            <div className={`h-6 w-px transition-colors duration-500 ${isScrolled ? 'bg-slate-200' : 'bg-white/20'}`} />
+            <div className={`h-6 w-px mx-2 transition-colors duration-500 ${isScrolled ? 'bg-slate-200' : 'bg-white/50'}`} />
             {isAuthenticated ? (
                <Link to={`/${user?.role?.toLowerCase()}`}>
-                  <Button className="bg-primary-900 text-white border-none shadow-2xl hover:scale-105 px-8">MY CONSOLE</Button>
+                  <Button className="bg-primary-900 text-white border-none shadow-2xl hover:scale-105 px-8 h-12 rounded-xl">MY CONSOLE</Button>
                </Link>
             ) : (
-               <div className="flex items-center gap-6">
-                  <Link to="/login" className={`text-xs font-black uppercase tracking-[0.2em] hover:text-elegant-gold transition-colors duration-300 ${
-                    isScrolled ? 'text-primary-900' : 'text-white'
-                  }`}>Login</Link>
+               <div className="flex items-center gap-4">
+                  <Link to="/login" className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-md ${
+                    isScrolled 
+                      ? 'bg-slate-100 hover:bg-slate-200 text-primary-900' 
+                      : 'bg-white text-primary-900 hover:bg-slate-100'
+                  }`}>
+                    Login
+                  </Link>
                   <Link to="/signup">
-                    <Button className="bg-elegant-gold text-primary-900 border-none font-black px-8 h-12 hover:shadow-[0_0_30px_-5px_#FACC15]">REGISTER</Button>
+                    <Button className="bg-elegant-gold text-primary-900 border-none font-black px-8 h-12 rounded-xl hover:shadow-[0_0_30px_-5px_#FACC15]">REGISTER</Button>
                   </Link>
                </div>
             )}

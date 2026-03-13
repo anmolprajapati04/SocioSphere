@@ -1,3 +1,6 @@
+// Main application component
+// Responsible for rendering routes and global layouts
+// Updated comments for readability - Aakash
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
