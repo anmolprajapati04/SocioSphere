@@ -79,15 +79,23 @@ const ResidentDashboard = () => {
   const [newComplaint, setNewComplaint] = useState({ title: '', description: '', priority: 'MEDIUM' });
   const [paying, setPaying] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [utilityData, setUtilityData] = useState([]);
+  const [pendingPayments, setPendingPayments] = useState([]);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [compResp, noticeResp] = await Promise.all([
+      const [compResp, noticeResp, usageResp, payResp] = await Promise.all([
         api.get('/complaints'),
-        api.get('/notices')
+        api.get('/notices'),
+        api.get('/maintenance/usage'),
+        api.get('/maintenance/payments')
       ]);
       setComplaints(compResp.data);
       setNotices(noticeResp.data);
+      setUtilityData(usageResp.data);
+      setPendingPayments(payResp.data.filter(p => p.status !== 'PAID'));
     } catch (err) {
       console.error('Failed to fetch resident data:', err);
     } finally {
@@ -130,30 +138,66 @@ const ResidentDashboard = () => {
     }
   };
 
-  const handlePaymentSimulation = () => {
+  const handlePayment = async (paymentId) => {
     setPaying(true);
-    setTimeout(() => {
+    try {
+      const res = await api.post(`/maintenance/payments/${paymentId}/pay`);
+      alert(res.data.message);
+      setShowPayModal(false);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Payment failed');
+    } finally {
       setPaying(false);
-      alert('Maintenance Paid Successfully! Receipts sent to mail.');
-    }, 2000);
+    }
   };
 
+  const pendingAmount = pendingPayments.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+
   const stats = [
-    { label: 'Pending Dues', value: '₹0.00', icon: CreditCard, trend: 'SECURE' },
-    { label: 'Gate Pass', value: 'ACTIVE', icon: ShieldCheck, trend: 'VERIFIED' },
-    { label: 'Reports', value: complaints.filter(c => c.status !== 'RESOLVED').length, icon: AlertCircle, trend: 'PRIORITY' },
-    { label: 'Residence', value: user?.role === 'RESIDENT' ? 'B-402' : 'ADMIN', icon: Users, trend: 'PLATINUM' },
+    { 
+      label: 'Pending Dues', 
+      value: `₹${pendingAmount.toFixed(2)}`, 
+      icon: CreditCard, 
+      color: 'text-indigo-600', 
+      bg: 'bg-indigo-50', 
+      status: pendingAmount > 0 ? 'Action Required' : 'Up to date' 
+    },
+    { label: 'Gate Pass', value: 'ACTIVE', icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', status: 'Verified' },
+    { label: 'My Reports', value: complaints.filter(c => c.status !== 'RESOLVED').length, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', status: 'Pending' },
+    { 
+      label: 'Residence', 
+      value: user?.flat_number || 'N/A', 
+      icon: Users, 
+      color: 'text-slate-600', 
+      bg: 'bg-slate-50', 
+      status: `Wing ${user?.wing || '-'}`,
+      onClick: () => setShowProfileModal(true)
+    },
   ];
 
   const maintenanceData = {
-    labels: ['OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR'],
-    datasets: [{
-      label: 'Energy (kWh)',
-      data: [120, 190, 150, 170, 140, 130],
-      backgroundColor: '#D4AF37',
-      borderRadius: 20,
-      barThickness: 12
-    }]
+    labels: utilityData.map(d => d.month),
+    datasets: [
+      {
+        label: 'Electricity (kWh)',
+        data: utilityData.map(d => d.electricity),
+        backgroundColor: '#4f46e5',
+        borderRadius: 6,
+      },
+      {
+        label: 'Water (L)',
+        data: utilityData.map(d => d.water),
+        backgroundColor: '#10b981',
+        borderRadius: 6,
+      },
+      {
+        label: 'LPG (Units)',
+        data: utilityData.map(d => d.lpg),
+        backgroundColor: '#f59e0b',
+        borderRadius: 6,
+      }
+    ]
   };
 
   return (
@@ -161,210 +205,321 @@ const ResidentDashboard = () => {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="p-10 space-y-12 bg-slate-50 min-h-screen text-slate-800"
+      className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
-      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row justify-between items-end gap-6">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-6xl font-black text-primary-900 tracking-tighter uppercase italic">
-             Concierge <span className="text-gold-500">Portal</span>
-           </h1>
-           <div className="flex items-center gap-4 mt-4">
-              <span className="w-12 h-1 bg-gold-500 rounded-full" />
-              <p className="text-slate-500 font-bold uppercase tracking-[0.5em] text-[10px]">Royal Palms • Premier Resident Interface</p>
-           </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Resident Dashboard</h1>
+          <p className="text-slate-500 font-medium">{user?.society_name || 'Society'} • Resident Portal</p>
         </div>
-        <div className="flex gap-6">
-           <Button 
-             onClick={handlePaymentSimulation}
-             disabled={paying}
-             className="px-10 h-16 bg-white border border-slate-200 text-elegant-gold font-black flex items-center gap-3 hover:bg-elegant-gold hover:text-primary-900 transition-all duration-500 rounded-2xl group shadow-sm"
-           >
-              <CreditCard className="w-6 h-6 group-hover:rotate-12 transition-transform" /> {paying ? 'VERIFYING...' : 'CLEAR DUES'}
-           </Button>
-           <Button 
-             onClick={() => setShowCompModal(true)}
-             className="px-10 h-16 bg-elegant-gold text-primary-900 font-black flex items-center gap-3 hover:scale-105 active:scale-95 transition-all rounded-2xl shadow-xl shadow-elegant-gold/20"
-           >
-              <Plus className="w-6 h-6" /> LODGE REPORT
-           </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setShowPayModal(true)}
+            disabled={pendingAmount === 0}
+            className="px-6 h-12 bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl shadow-sm disabled:opacity-50"
+          >
+            <CreditCard className="w-5 h-5" /> Pay Dues
+          </Button>
+          <Button 
+            onClick={() => setShowCompModal(true)}
+            className="px-6 h-12 bg-indigo-600 text-white font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all rounded-xl shadow-md shadow-indigo-100"
+          >
+            <Plus className="w-5 h-5" /> Lodge Report
+          </Button>
         </div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((s, i) => (
           <motion.div key={i} variants={itemVariants}>
-            <Card className="luxury-card p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="flex justify-between items-start mb-8 relative z-10">
-                 <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-elegant-gold group-hover:bg-elegant-gold group-hover:text-primary-900 transition-all duration-500 border border-slate-200 shadow-sm">
-                    <s.icon className="w-7 h-7" />
-                 </div>
-                 <div className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full border border-white/10 text-slate-400`}>
-                    {s.trend}
-                 </div>
+            <Card 
+              onClick={s.onClick}
+              className={`p-6 transition-all border-slate-100 group ${s.onClick ? 'cursor-pointer hover:shadow-lg' : ''}`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 ${s.bg} rounded-xl flex items-center justify-center ${s.color}`}>
+                  <s.icon className="w-6 h-6" />
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-2 py-1 rounded-md">
+                  {s.status}
+                </div>
               </div>
-              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2">{s.label}</p>
-              <h3 className="text-4xl font-black text-primary-900 tracking-tighter">
-                {loading ? '---' : s.value}
+              <p className="text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">{s.label}</p>
+              <h3 className="text-2xl font-bold text-slate-900">
+                {loading ? '...' : s.value}
               </h3>
             </Card>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-10">
+      <div className="grid lg:grid-cols-3 gap-8">
         <motion.div variants={itemVariants} className="lg:col-span-2">
-          <Card className="luxury-card p-10 relative overflow-hidden">
-             <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:30px_30px]" />
-             <div className="relative z-10">
-                <div className="flex justify-between items-center mb-10">
-                   <div>
-                      <h3 className="text-3xl font-black text-primary-900 tracking-tighter uppercase italic">Resource <span className="text-gold-500">Matrix</span></h3>
-                      <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">Utility Consumption Analysis</p>
-                   </div>
-                   <div className="flex gap-2">
-                     {['M', 'Y'].map(t => (
-                       <button key={t} className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-[10px] font-black text-slate-500 hover:text-elegant-gold transition-colors uppercase shadow-sm">{t}</button>
-                     ))}
-                   </div>
-                </div>
-                <div className="h-[300px]">
-                   <Bar data={maintenanceData} options={{ 
-                     responsive: true, 
-                     maintainAspectRatio: false,
-                     plugins: { legend: { display: false } },
-                     scales: { 
-                        y: { 
-                          grid: { color: 'rgba(255,255,255,0.05)' },
-                          ticks: { color: '#64748b', font: { weight: 'bold', size: 10 } }
-                        }, 
-                        x: { 
-                          grid: { display: false },
-                          ticks: { color: '#64748b', font: { weight: 'bold', size: 10 } }
-                        } 
-                     }
-                   }} />
-                </div>
-             </div>
+          <Card className="p-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Consumption Analysis</h3>
+                <p className="text-slate-500 text-sm font-medium">Monthly utility usage matrix</p>
+              </div>
+              <div className="flex gap-2">
+                {['M', 'Y'].map(t => (
+                  <button key={t} className="px-3 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors uppercase">
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[300px]">
+              <Bar data={maintenanceData} options={{ 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { 
+                  legend: { 
+                    display: true, 
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { weight: '600', size: 10 } }
+                  } 
+                },
+                scales: { 
+                    y: { 
+                      grid: { borderDash: [5, 5] },
+                      ticks: { color: '#64748b', font: { weight: '600', size: 11 } }
+                    }, 
+                    x: { 
+                      grid: { display: false },
+                      ticks: { color: '#64748b', font: { weight: '600', size: 11 } }
+                    } 
+                }
+              }} />
+            </div>
           </Card>
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="luxury-card p-10">
-             <div className="flex justify-between items-center mb-10">
-                <h3 className="text-2xl font-black text-primary-900 tracking-tighter uppercase italic">Society <span className="text-gold-500">Alerts</span></h3>
-                <Bell className="w-5 h-5 text-gold-500 animate-bounce" />
-             </div>
-             
-             <NoticeBoard notices={notices} loading={loading} />
+          <Card className="p-8">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Society Notices</h3>
+              <Badge variant="neutral" className="bg-indigo-50 text-indigo-600 border-none">Recent</Badge>
+            </div>
+            
+            <NoticeBoard notices={notices} loading={loading} />
 
-             <Button className="w-full mt-10 h-16 bg-slate-50 border border-slate-200 shadow-sm text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:border-elegant-gold hover:text-elegant-gold transition-all">VIEW ARCHIVE</Button>
+            <Button className="w-full mt-8 h-12 bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-100 transition-all">
+              View All Notices
+            </Button>
           </Card>
         </motion.div>
       </div>
 
       <motion.div variants={itemVariants}>
-        <Card className="luxury-card overflow-hidden">
-           <div className="p-12 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <h3 className="text-3xl font-black text-primary-900 tracking-tighter uppercase italic">Personal <span className="text-gold-500">Reports</span></h3>
-              <div className="relative group">
-                 <Search className="w-6 h-6 absolute left-6 top-1/2 -translate-y-1/2 text-slate-700 group-focus-within:text-gold-500 transition-colors" />
-                 <input 
-                   type="text" 
-                   placeholder="Search reports..." 
-                   value={searchQuery}
-                   onChange={e => setSearchQuery(e.target.value)}
-                   className="h-16 pl-16 pr-8 bg-slate-50 border border-white/5 rounded-2xl text-sm font-bold text-primary-900 w-80 focus:ring-2 ring-gold-500/20 transition-all outline-none" 
-                 />
+        <Card className="overflow-hidden">
+          <div className="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center bg-white gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Personal Reports</h3>
+              <p className="text-slate-500 text-sm font-medium">History of your lodged issues</p>
+            </div>
+            <div className="relative w-full md:w-80">
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search reports..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 ring-indigo-500/20 transition-all outline-none" 
+              />
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-[#f8fafc] text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-8 py-4">Topic / Identity</th>
+                  <th className="px-8 py-4">Status</th>
+                  <th className="px-8 py-4">Management Response</th>
+                  <th className="px-8 py-4 text-right">Filed On</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {complaints.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase())).map(c => (
+                  <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="font-bold text-slate-900">{c.title}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Priority: {c.priority}</div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${c.status === 'RESOLVED' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                        <span className="text-xs font-semibold text-slate-700">{c.status.replace('_', ' ')}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      {c.admin_response ? (
+                        <div className="text-slate-600 text-sm font-medium border-l-2 border-indigo-500 pl-4 py-1 max-w-md">
+                          {c.admin_response}
+                        </div>
+                      ) : (
+                        <div className="text-slate-400 text-xs font-semibold italic flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5" /> Awaiting action
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <div className="text-xs font-semibold text-slate-500">
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {complaints.length === 0 && !loading && (
+              <div className="py-24 text-center flex flex-col items-center">
+                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <p className="text-slate-500 font-bold text-sm tracking-tight">No reports found</p>
+                <p className="text-slate-400 text-xs mt-1">Lodge a new report to get started</p>
               </div>
-           </div>
-           <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                 <thead className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-                    <tr>
-                       <th className="px-12 py-8">Topic / Ident</th>
-                       <th className="px-12 py-8">Status</th>
-                       <th className="px-12 py-8">Admin Feedback</th>
-                       <th className="px-12 py-8 text-right">Data</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-white/5">
-                    {complaints.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase())).map(c => (
-                      <tr key={c.id} className="hover:bg-white/[0.02] transition-colors group">
-                         <td className="px-12 py-10">
-                            <div className="font-black text-primary-900 text-lg group-hover:text-gold-500 transition-colors uppercase italic">{c.title}</div>
-                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-2">PRIORITY: {c.priority}</div>
-                         </td>
-                         <td className="px-12 py-10">
-                            <div className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-lg inline-block
-                              ${c.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gold-500/10 text-gold-500'}`}>
-                               {c.status.replace('_', ' ')}
-                            </div>
-                         </td>
-                         <td className="px-12 py-10">
-                            {c.admin_response ? (
-                               <div className="text-slate-400 text-sm font-bold border-l-2 border-gold-500 pl-4 py-1 italic max-w-md">
-                                  {c.admin_response}
-                               </div>
-                            ) : (
-                               <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
-                                  <Clock className="w-3 h-3" /> Awaiting Protocol
-                               </div>
-                            )}
-                         </td>
-                         <td className="px-12 py-10 text-right">
-                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                               {new Date(c.createdAt).toLocaleDateString()}
-                            </div>
-                         </td>
-                      </tr>
-                    ))}
-                 </tbody>
-              </table>
-              {complaints.length === 0 && !loading && (
-                 <div className="p-32 text-center flex flex-col items-center gap-6">
-                   <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center text-slate-700">
-                      <AlertCircle className="w-10 h-10" />
-                   </div>
-                   <p className="text-slate-600 font-black uppercase tracking-[0.4em] text-xs">Clear Matrix • No Active Reports</p>
-                 </div>
-              )}
-           </div>
+            )}
+          </div>
         </Card>
       </motion.div>
 
-      <Modal isOpen={showCompModal} onClose={() => setShowCompModal(false)} title="Strategic Report Lodge" className="bg-white">
-         <form onSubmit={handleRaiseComplaint} className="space-y-8">
-            <Input label="Report Subject" placeholder="Strategic header of issue" value={newComplaint.title} onChange={e => setNewComplaint({...newComplaint, title: e.target.value})} className="input-luxury" />
-            <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Objective detail</label>
-               <textarea 
-                 rows="6"
-                 placeholder="Provide detailed environmental parameters..."
-                 value={newComplaint.description}
-                 onChange={e => setNewComplaint({...newComplaint, description: e.target.value})}
-                 className="input-luxury min-h-[200px] resize-none"
-               />
+      <Modal isOpen={showCompModal} onClose={() => setShowCompModal(false)} title="Lodge New Report" className="bg-white">
+        <form onSubmit={handleRaiseComplaint} className="space-y-5">
+          <Input 
+            label="Subject" 
+            placeholder="e.g., Water leakage in Wing A" 
+            value={newComplaint.title} 
+            onChange={e => setNewComplaint({...newComplaint, title: e.target.value})} 
+          />
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Description</label>
+            <textarea 
+              rows="6"
+              placeholder="Provide more details about the issue..."
+              value={newComplaint.description}
+              onChange={e => setNewComplaint({...newComplaint, description: e.target.value})}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Priority Level</label>
+            <div className="grid grid-cols-3 gap-3">
+              {['LOW', 'MEDIUM', 'HIGH'].map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setNewComplaint({...newComplaint, priority: p})}
+                  className={`py-3 rounded-xl text-xs font-bold transition-all border ${
+                    p === newComplaint.priority ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
-            <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Priority scale</label>
-               <div className="grid grid-cols-3 gap-3">
-                  {['LOW', 'MEDIUM', 'HIGH'].map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setNewComplaint({...newComplaint, priority: p})}
-                      className={`py-4 rounded-xl text-[10px] font-black transition-all border ${
-                        p === newComplaint.priority ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-lg' : 'bg-slate-900 text-slate-500 border-white/5'
-                      }`}
+          </div>
+          <Button type="submit" className="w-full bg-indigo-600 text-white h-14 font-bold rounded-2xl mt-4 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+            Submit Report
+          </Button>
+        </form>
+      </Modal>
+
+      {/* Payment Modal */}
+      <Modal isOpen={showPayModal} onClose={() => setShowPayModal(false)} title="Maintenance Settlement" className="bg-white max-w-2xl">
+        <div className="space-y-6">
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+            <h4 className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Resident Credentials</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Name</p>
+                <p className="text-sm font-bold text-slate-900">{user?.name}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Residence</p>
+                <p className="text-sm font-bold text-slate-900">Wing {user?.wing} • Flat {user?.flat_number}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Contact</p>
+                <p className="text-sm font-bold text-slate-900">{user?.phone}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Email</p>
+                <p className="text-sm font-bold text-slate-900">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Pending Invoices</h4>
+            <div className="space-y-2">
+              {pendingPayments.map(p => (
+                <div key={p.id} className="flex justify-between items-center p-4 bg-white border border-slate-100 rounded-xl">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Maintenance Bill #{p.id}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase italic">{new Date(p.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-slate-900">₹{parseFloat(p.amount).toLocaleString()}</p>
+                    <Button 
+                      onClick={() => handlePayment(p.id)}
+                      disabled={paying}
+                      className="mt-2 px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
                     >
-                      {p}
-                    </button>
-                  ))}
-               </div>
+                      {paying ? 'Processing...' : 'Settle Now'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <Button type="submit" className="w-full btn-luxury uppercase h-20 text-lg shadow-2xl">Execute Lodge</Button>
-         </form>
+          </div>
+
+          <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <p className="text-[11px] font-semibold text-emerald-700 leading-tight">
+              Secure 256-bit encrypted transaction. Successful payments will be instantly reflected across society systems and a digital receipt will be emailed to you.
+            </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Residence Detail Modal */}
+      <Modal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} title="Residence Profile" className="bg-white">
+        <div className="space-y-6">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+              <Users className="w-10 h-10" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">{user?.name}</h3>
+              <Badge variant="success" className="bg-indigo-50 text-indigo-600 border-none uppercase tracking-widest text-[10px]">{user?.role}</Badge>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Society</p>
+              <p className="text-sm font-bold text-slate-900">{user?.society_name || 'SocioSphere'}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Unit Number</p>
+              <p className="text-sm font-bold text-slate-900">{user?.wing}-{user?.flat_number}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Contact</p>
+              <p className="text-sm font-bold text-slate-900">{user?.phone}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Account ID</p>
+              <p className="text-sm font-bold text-slate-900">#{user?.id?.toString().padStart(6, '0')}</p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-[11px] text-slate-400 font-medium italic">Member since {new Date(user?.created_at || Date.now()).toLocaleDateString()}</p>
+          </div>
+        </div>
       </Modal>
     </motion.div>
   );

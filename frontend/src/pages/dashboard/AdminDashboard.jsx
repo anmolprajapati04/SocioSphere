@@ -109,7 +109,8 @@ const AdminDashboard = () => {
         const resp = await api.get('/maintenance/payments?status=PAID');
         setDetailsData(resp.data);
       } else if (type === 'complaints') {
-        setDetailsData(data.complaints);
+        const resp = await api.get('/complaints');
+        setDetailsData(resp.data);
       } else if (type === 'defaulters') {
         const resp = await api.get('/maintenance/payments?status=OVERDUE');
         setDetailsData(resp.data);
@@ -124,45 +125,35 @@ const AdminDashboard = () => {
     
     const socket = io('http://localhost:5000');
     
-    socket.on('new_complaint', (complaint) => {
-      if (complaint.society_id === authUser?.society_id) {
-        fetchData();
-      }
-    });
-
-    socket.on('new_notice', (notice) => {
-      if (notice.society_id === authUser?.society_id) {
-        fetchData();
-      }
-    });
-
-    socket.on('new_visitor', () => {
-       fetchData();
-    });
+    socket.on('new_complaint', () => fetchData());
+    socket.on('new_notice', () => fetchData());
+    socket.on('new_visitor', () => fetchData());
 
     return () => socket.disconnect();
   }, [authUser?.society_id]);
+
+  const stats = [
+    { label: 'Total Residents', value: data.residentsCount, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', type: 'residents' },
+    { label: 'Collection (PAID)', value: `₹${(data.maintenanceRevenue).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', type: 'collection' },
+    { label: 'Total Complaints', value: data.totalComplaints, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', type: 'complaints' },
+    { label: 'Defaulters', value: data.paymentDefaulters, icon: CreditCard, color: 'text-rose-600', bg: 'bg-rose-50', type: 'defaulters' },
+  ];
 
   const handleAddResident = async (e) => {
     e.preventDefault();
     try {
       await api.post('/auth/register', {
-        name: newResident.name,
-        email: newResident.email,
-        phone: newResident.phone,
+        ...newResident,
         password: 'Password123!',
         role: 'Resident',
-        wing: newResident.wing,
         flat_number: newResident.flat,
-        is_owner: newResident.isOwner,
-        society_id: newResident.society_id || authSocietyId || authUser?.society_id || data.society_id
+        society_id: authSocietyId || authUser?.society_id
       });
       setShowResModal(false);
       fetchData();
-      alert('Resident enrolled successfully with default password: Password123!');
       setNewResident({ name: '', email: '', phone: '', wing: '', flat: '', isOwner: true });
     } catch (err) {
-      alert(err.response?.data?.message || 'Error executing enrollment');
+      alert(err.response?.data?.message || 'Error enrolling resident');
     }
   };
 
@@ -176,9 +167,8 @@ const AdminDashboard = () => {
       setSelectedComplaint(null);
       setAdminResponse('');
       fetchData();
-      alert('Resolution deployed and broadcasted.');
     } catch (err) {
-      alert(err.response?.data?.message || 'Error updating complaint. Please verify if the record still exists or if network is stable.');
+      alert('Error updating complaint');
     }
   };
 
@@ -188,27 +178,10 @@ const AdminDashboard = () => {
       await api.post('/notices', newNotice);
       setShowNoticeModal(false);
       fetchData();
-      alert('Strategic broadcast deployed successfully');
       setNewNotice({ title: '', content: '' });
     } catch (err) {
       alert(err.response?.data?.message || 'Error deploying notice');
     }
-  };
-
-  const stats = [
-    { label: 'Total Residents', value: data.residentsCount, icon: Users, trend: '+0.0%', up: true, type: 'residents' },
-    { label: 'Collection (PAID)', value: `₹${(data.maintenanceRevenue / 1000).toFixed(1)}k`, icon: TrendingUp, trend: '+0.0%', up: true, type: 'collection' },
-    { label: 'Total Complaints', value: data.totalComplaints, icon: AlertCircle, trend: `+${data.complaintStats.find(s => s.status === 'PENDING')?.count || 0}`, up: false, type: 'complaints' },
-    { label: 'Defaulters', value: data.paymentDefaulters, icon: CreditCard, trend: '0%', up: false, type: 'defaulters' },
-  ];
-
-  const collectionData = {
-    labels: ['Maintenance', 'Amenities', 'Fine', 'Others'],
-    datasets: [{
-      data: [65, 15, 10, 10],
-      backgroundColor: ['#0F172A', '#FACC15', '#10B981', '#cbd5e1'],
-      borderWidth: 0,
-    }]
   };
 
   return (
@@ -216,308 +189,328 @@ const AdminDashboard = () => {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="p-10 space-y-12 bg-slate-50 min-h-screen text-slate-800"
+      className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
-      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row justify-between items-end gap-6">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-6xl font-black text-primary-900 tracking-tighter uppercase italic">
-             Command <span className="text-gold-500">Center</span>
-           </h1>
-           <div className="flex items-center gap-4 mt-4">
-              <span className="w-12 h-1 bg-gold-500 rounded-full" />
-              <p className="text-slate-500 font-bold uppercase tracking-[0.5em] text-[10px]">Strategic Management Interface • Royal Palms</p>
-           </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
+          <p className="text-slate-500 font-medium">Society Management Overview • {authUser?.society_name || 'Society'}</p>
         </div>
-        <div className="flex gap-6">
-           <Button 
-             onClick={() => setShowResModal(true)}
-             className="px-10 h-16 bg-white border border-slate-200 text-elegant-gold font-black flex items-center gap-3 hover:bg-elegant-gold hover:text-primary-900 transition-all duration-500 rounded-2xl group shadow-sm"
-           >
-              <UserPlus className="w-6 h-6 group-hover:rotate-12 transition-transform" /> ENROLL RESIDENT
-           </Button>
-           <Button 
-             onClick={() => setShowNoticeModal(true)}
-             className="px-10 h-16 bg-elegant-gold text-primary-900 font-black flex items-center gap-3 hover:scale-105 active:scale-95 transition-all rounded-2xl shadow-xl shadow-elegant-gold/20"
-           >
-              <FileText className="w-6 h-6" /> BROADCAST DATA
-           </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setShowResModal(true)}
+            className="px-6 h-12 bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
+          >
+            <UserPlus className="w-5 h-5" /> Enroll Resident
+          </Button>
+          <Button 
+            onClick={() => setShowNoticeModal(true)}
+            className="px-6 h-12 bg-indigo-600 text-white font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all rounded-xl shadow-md shadow-indigo-100"
+          >
+            <FileText className="w-5 h-5" /> Post Notice
+          </Button>
         </div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((s, i) => (
           <motion.div key={i} variants={itemVariants}>
             <Card 
               onClick={() => handleShowDetails(s.type)}
-              className="luxury-card p-10 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-all"
+              className="p-6 cursor-pointer hover:shadow-lg transition-all border-slate-100 group"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="flex justify-between items-start mb-8 relative z-10">
-                 <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-elegant-gold group-hover:bg-elegant-gold group-hover:text-primary-900 transition-all duration-500 shadow-sm border border-slate-100">
-                    <s.icon className="w-7 h-7" />
-                 </div>
-                 <div className={`text-[10px] font-black tracking-widest px-3 py-1 rounded-full border border-white/10 text-slate-400`}>
-                    {s.trend}
-                 </div>
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 ${s.bg} rounded-xl flex items-center justify-center ${s.color}`}>
+                  <s.icon className="w-6 h-6" />
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-slate-400 transition-colors" />
               </div>
-              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2">{s.label}</p>
-              <h3 className="text-4xl font-black text-primary-900 tracking-tighter">
-                {loading ? '---' : s.value}
+              <p className="text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">{s.label}</p>
+              <h3 className="text-2xl font-bold text-slate-900">
+                {loading ? '...' : s.value}
               </h3>
             </Card>
           </motion.div>
         ))}
       </div>
-      <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-10">
-         <Card className="luxury-card p-10 lg:col-span-2">
-            <div className="flex justify-between items-center mb-10">
-               <div>
-                  <h3 className="text-3xl font-black text-primary-900 tracking-tighter uppercase italic">Strategic <span className="text-gold-500">Growth</span></h3>
-                  <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">Maintenance Revenue Matrix</p>
-               </div>
-               <div className="flex gap-2">
-                 {['D', 'W', 'M', 'Y'].map(t => (
-                   <button key={t} className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-[10px] font-black text-slate-500 hover:text-elegant-gold transition-colors uppercase">{t}</button>
-                 ))}
-               </div>
+      <div className="grid lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Revenue Analysis</h3>
+              <p className="text-slate-500 text-sm">Monthly collection performance</p>
             </div>
-            <div className="h-[350px]">
-               {growthData.length > 0 ? (
-                 <Bar 
-                   data={{
-                     labels: growthData.map(d => d.month),
-                     datasets: [{
-                       label: 'Revenue',
-                       data: growthData.map(d => d.total),
-                       backgroundColor: '#0F172A',
-                       borderRadius: 12,
-                       barThickness: 40
-                     }]
-                   }}
-                   options={{
-                     responsive: true,
-                     maintainAspectRatio: false,
-                     plugins: {
-                       legend: { display: false },
-                       tooltip: {
-                         backgroundColor: '#0F172A',
-                         titleFont: { family: 'Inter', size: 12, weight: 'bold' },
-                         bodyFont: { family: 'Inter', size: 12 },
-                         padding: 12,
-                         displayColors: false
-                       }
-                     },
-                     scales: {
-                       y: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } },
-                       x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
-                     }
-                   }}
-                 />
-               ) : (
-                 <div className="h-full flex items-center justify-center italic text-slate-800 font-black bg-slate-50/50 rounded-3xl border border-slate-200 relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:40px_40px]" />
-                    <div className="flex flex-col items-center gap-4 relative z-10">
-                       <TrendingUp className="w-16 h-16 text-slate-900 animate-pulse" />
-                       <span className="uppercase tracking-[0.4em] text-[10px] text-slate-600">No Growth Data Available</span>
-                    </div>
-                 </div>
-               )}
-            </div>
-         </Card>
-
-         <Card className="luxury-card p-12 flex flex-col items-center justify-center relative">
-            <h3 className="text-2xl font-black text-primary-900 tracking-tighter mb-4 w-full uppercase italic">Alert <span className="text-gold-500">Board</span></h3>
-            <NoticeBoard notices={data.notices} loading={loading} />
-         </Card>
-      </motion.div>
-
-      <motion.div variants={itemVariants} className="space-y-12">
-        <Card className="luxury-card overflow-hidden">
-           <div className="p-12 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-3xl font-black text-primary-900 tracking-tighter uppercase italic">Resolution <span className="text-gold-500">Terminal</span></h3>
-              <div className="flex gap-4">
-                 <Badge variant="warning" className="px-5 py-2 rounded-xl text-[10px] font-black tracking-[0.2em] animate-pulse">PENDING AUDIT</Badge>
+          </div>
+          <div className="h-[350px]">
+            {growthData.length > 0 ? (
+              <Bar 
+                data={{
+                  labels: growthData.map(d => d.month),
+                  datasets: [{
+                    label: 'Revenue',
+                    data: growthData.map(d => d.total),
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 8,
+                    barThickness: 32
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { grid: { borderDash: [5, 5] }, ticks: { font: { weight: '600' } } },
+                    x: { grid: { display: false }, ticks: { font: { weight: '600' } } }
+                  }
+                }}
+              />
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <TrendingUp className="w-12 h-12 mb-2 opacity-20" />
+                <p className="font-semibold">Loading charts...</p>
               </div>
-           </div>
-           <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                 <thead className="bg-slate-50/50 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
-                    <tr>
-                       <th className="px-12 py-8">Subject / Identity</th>
-                       <th className="px-12 py-8">Metric</th>
-                       <th className="px-12 py-8 text-right">Process</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-white/5">
-                    {data.complaints?.slice(0, 5).map((c, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
-                         <td className="px-12 py-10">
-                            <div className="font-black text-primary-900 text-lg group-hover:text-gold-500 transition-colors uppercase italic">{c.title}</div>
-                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-2">{c.User?.name || `Resident Node #${c.resident_id}`} • {c.User?.flat_number || 'N/A'} • Priority {c.priority}</div>
-                         </td>
-                         <td className="px-12 py-10">
-                            <div className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-lg inline-block
-                              ${c.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gold-500/10 text-gold-500'}`}>
-                               {c.status}
-                            </div>
-                         </td>
-                         <td className="px-12 py-10 text-right">
-                            <Button 
-                               onClick={() => setSelectedComplaint(c)}
-                               className="px-8 h-12 bg-white border border-slate-200 shadow-sm text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-gold-500 hover:text-gold-500 transition-all"
-                            >OPEN ACCESS</Button>
-                         </td>
-                      </tr>
-                    ))}
-                 </tbody>
-              </table>
-           </div>
+            )}
+          </div>
         </Card>
-      </motion.div>
+
+        <Card className="p-8">
+          <h3 className="text-xl font-bold text-slate-900 mb-6">Recent Notices</h3>
+          <NoticeBoard notices={data.notices} loading={loading} />
+          <Button className="w-full mt-6 h-12 bg-slate-50 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-all">
+            View All
+          </Button>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+          <h3 className="text-xl font-bold text-slate-900">Pending Complaints</h3>
+          <Badge variant="warning" className="px-3 py-1 text-xs">Review Required</Badge>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-[#f8fafc] text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+              <tr>
+                <th className="px-8 py-4">Complaint / Resident</th>
+                <th className="px-8 py-4">Priority</th>
+                <th className="px-8 py-4">Status</th>
+                <th className="px-8 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {data.complaints?.slice(0, 5).map((c, i) => (
+                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-8 py-6">
+                    <div className="font-bold text-slate-900">{c.title}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                       {c.User?.name || 'Unknown'} • {c.User?.flat_number || 'N/A'} • {c.User?.phone || 'No Phone'}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                      c.priority === 'HIGH' ? 'bg-rose-50 text-rose-600' : 
+                      c.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-600'
+                    }`}>
+                      {c.priority}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${c.status === 'RESOLVED' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <span className="text-xs font-semibold text-slate-700">{c.status}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <Button 
+                      onClick={() => setSelectedComplaint(c)}
+                      className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
+                    >
+                      Resolve
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {/* Details Drill-down Modal */}
       <Modal 
         isOpen={!!detailsType} 
         onClose={() => setDetailsType(null)} 
-        title={`${detailsType?.toUpperCase()} DETAILS`}
-        className="max-w-4xl bg-white"
+        title={`${detailsType?.replace('_', ' ').toUpperCase()} DETAILS`}
+        className="max-w-4xl bg-white p-2"
       >
-        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-          {detailsType === 'residents' && detailsData.map((r, i) => (
-            <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center group hover:border-gold-500/30 transition-all">
-              <div>
-                <div className="font-black text-primary-900 uppercase italic">{r.User?.name}</div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{r.wing}-{r.flat_number} • {r.User?.phone}</div>
-              </div>
-              <Badge variant={r.is_owner ? 'success' : 'neutral'}>{r.is_owner ? 'OWNER' : 'TENANT'}</Badge>
-            </div>
-          ))}
-
-          {(detailsType === 'collection' || detailsType === 'defaulters') && detailsData.map((p, i) => (
-            <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center group hover:border-gold-500/30 transition-all">
-              <div>
-                <div className="font-black text-primary-900 uppercase italic">{p.Resident?.name}</div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Flat {p.Resident?.flat_number} • Bill ID #{p.id}</div>
-              </div>
-              <div className="text-right">
-                <div className="font-black text-primary-900">₹{p.amount}</div>
-                <div className={`text-[10px] font-black tracking-widest ${p.status === 'PAID' ? 'text-emerald-500' : 'text-rose-500'}`}>{p.status}</div>
-              </div>
-            </div>
-          ))}
-
-          {detailsType === 'complaints' && detailsData.map((c, i) => (
-            <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 group hover:border-gold-500/30 transition-all">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-black text-primary-900 uppercase italic">{c.title}</div>
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">By: {c.User?.name || 'Resident'} ({c.User?.flat_number || 'N/A'}) • Priority: {c.priority}</div>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto p-4 custom-scrollbar">
+          {detailsType === 'residents' && (
+            <div className="grid gap-4">
+              {detailsData.map((r, i) => (
+                <div key={i} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                      {r.User?.name?.[0]}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900">{r.User?.name}</div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        {r.wing}-{r.flat_number} • {r.User?.phone} • {r.User?.email}
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant={r.is_owner ? 'success' : 'neutral'}>{r.is_owner ? 'Owner' : 'Tenant'}</Badge>
                 </div>
-                <Badge variant={c.status === 'RESOLVED' ? 'success' : 'warning'}>{c.status}</Badge>
-              </div>
-              <p className="text-sm text-slate-600 font-medium">{c.description}</p>
+              ))}
             </div>
-          ))}
+          )}
+
+          {(detailsType === 'collection' || detailsType === 'defaulters') && (
+            <div className="grid gap-4">
+              {detailsData.map((p, i) => (
+                <div key={i} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-bold text-slate-900">{p.Resident?.name}</div>
+                    <div className="text-xs text-slate-500 font-medium">Flat {p.Resident?.flat_number} • {p.Resident?.phone || 'No Phone'} • Bill ID #{p.id}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-slate-900 text-lg">₹{p.amount.toLocaleString()}</div>
+                    <div className={`text-[10px] font-black tracking-widest uppercase ${p.status === 'PAID' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {p.status}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {detailsType === 'complaints' && (
+            <div className="grid gap-4">
+              {detailsData.map((c, i) => (
+                <div key={i} className="p-6 border border-slate-100 rounded-2xl space-y-3 hover:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-slate-900 text-lg">{c.title}</div>
+                      <div className="text-xs text-slate-500 font-bold mt-1">
+                        RAISED BY: {c.User?.name} ({c.User?.flat_number}) • TEL: {c.User?.phone}
+                      </div>
+                    </div>
+                    <Badge variant={c.status === 'RESOLVED' ? 'success' : 'warning'}>{c.status}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-50">{c.description}</p>
+                  <div className="flex gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Priority: {c.priority}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">•</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(c.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           
           {detailsData.length === 0 && (
-            <div className="py-20 text-center space-y-4">
-              <AlertCircle className="w-12 h-12 text-slate-300 mx-auto" />
-              <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs">No records discovered in this sector</p>
+            <div className="py-20 text-center text-slate-400 flex flex-col items-center">
+              <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
+              <p className="font-semibold">No records found for this category</p>
             </div>
           )}
         </div>
       </Modal>
 
-      {/* Modals Overhaul */}
-      <Modal isOpen={!!selectedComplaint} onClose={() => setSelectedComplaint(null)} title="Resolution Terminal" className="max-w-2xl bg-white border border-white/10">
-         {selectedComplaint && (
-           <form onSubmit={handleUpdateComplaint} className="space-y-8">
-              <div className="p-6 bg-slate-50 rounded-3xl border border-white/5">
-                 <h4 className="text-gold-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Original Report</h4>
-                 <p className="text-primary-900 font-bold leading-relaxed">{selectedComplaint.description}</p>
+      {/* Resolve Modal */}
+      <Modal isOpen={!!selectedComplaint} onClose={() => setSelectedComplaint(null)} title="Complaint Resolution" className="max-w-2xl bg-white">
+        {selectedComplaint && (
+          <form onSubmit={handleUpdateComplaint} className="space-y-6">
+            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+              <h4 className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Complaint Details</h4>
+              <p className="text-slate-900 font-semibold">{selectedComplaint.description}</p>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700">Update Status</label>
+              <div className="grid grid-cols-3 gap-3">
+                {['PENDING', 'IN_PROGRESS', 'RESOLVED'].map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setResStatus(s)}
+                    className={`py-3 rounded-xl text-xs font-bold transition-all border ${
+                      resStatus === s ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
-              
-              <div className="space-y-4">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Execution status</label>
-                 <div className="grid grid-cols-3 gap-3">
-                    {['PENDING', 'IN_PROGRESS', 'RESOLVED'].map(s => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setResStatus(s)}
-                        className={`py-4 rounded-xl text-[10px] font-black transition-all border ${
-                          resStatus === s ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-lg shadow-gold-500/20' : 'bg-slate-900 text-slate-500 border-white/5'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                 </div>
-              </div>
+            </div>
 
-              <div className="space-y-4">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Administrative Response</label>
-                 <textarea 
-                   rows="4"
-                   placeholder="Enter formal response for the resident..."
-                   value={adminResponse}
-                   onChange={e => setAdminResponse(e.target.value)}
-                   className="input-luxury min-h-[150px] resize-none"
-                   required
-                 />
-              </div>
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700">Admin Response</label>
+              <textarea 
+                rows="4"
+                placeholder="Briefly describe the action taken..."
+                value={adminResponse}
+                onChange={e => setAdminResponse(e.target.value)}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 ring-indigo-500/20 outline-none transition-all"
+                required
+              />
+            </div>
 
-              <Button type="submit" className="w-full btn-luxury uppercase h-20 text-lg italic shadow-2xl">Deploy Resolution</Button>
-           </form>
-         )}
+            <Button type="submit" className="w-full bg-indigo-600 text-white h-14 font-bold rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+              Save Resolution
+            </Button>
+          </form>
+        )}
       </Modal>
 
-      <Modal isOpen={showResModal} onClose={() => setShowResModal(false)} title="Registry Enrollment" className="bg-white">
-         <form onSubmit={handleAddResident} className="space-y-6">
-            <Input label="Registry Identity" placeholder="Full legal name" value={newResident.name} onChange={e => setNewResident({...newResident, name: e.target.value})} className="input-luxury" required />
-            <Input label="Digital Primary" type="email" placeholder="official@access.com" value={newResident.email} onChange={e => setNewResident({...newResident, email: e.target.value})} className="input-luxury" required />
-            <Input label="Contact Matrix" placeholder="+91 XXXXX XXXXX" value={newResident.phone} onChange={e => setNewResident({...newResident, phone: e.target.value})} className="input-luxury" required />
-            <Input label="Society Protocol ID" placeholder="Society ID" value={newResident.society_id || authUser?.society_id || ''} onChange={e => setNewResident({...newResident, society_id: e.target.value})} className="input-luxury" required />
-            <div className="grid grid-cols-2 gap-6">
-               <Input label="Sector" placeholder="Wing" value={newResident.wing} onChange={e => setNewResident({...newResident, wing: e.target.value})} className="input-luxury" />
-               <Input label="Node" placeholder="Flat No." value={newResident.flat} onChange={e => setNewResident({...newResident, flat: e.target.value})} className="input-luxury" />
+      {/* Enrollment Modal */}
+      <Modal isOpen={showResModal} onClose={() => setShowResModal(false)} title="New Resident Entry" className="bg-white">
+        <form onSubmit={handleAddResident} className="space-y-4">
+          <Input label="Full Name" placeholder="John Doe" value={newResident.name} onChange={e => setNewResident({...newResident, name: e.target.value})} required />
+          <Input label="Email Address" type="email" placeholder="john@example.com" value={newResident.email} onChange={e => setNewResident({...newResident, email: e.target.value})} required />
+          <Input label="Phone Number" placeholder="+91 98765 43210" value={newResident.phone} onChange={e => setNewResident({...newResident, phone: e.target.value})} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Wing/Block" placeholder="A" value={newResident.wing} onChange={e => setNewResident({...newResident, wing: e.target.value})} />
+            <Input label="Flat Number" placeholder="101" value={newResident.flat} onChange={e => setNewResident({...newResident, flat: e.target.value})} />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+            <span className="text-sm font-bold text-slate-700">Ownership Status</span>
+            <div className="flex gap-2">
+              <button 
+                type="button"
+                onClick={() => setNewResident({...newResident, isOwner: true})}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${newResident.isOwner ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
+              >
+                Owner
+              </button>
+              <button 
+                type="button"
+                onClick={() => setNewResident({...newResident, isOwner: false})}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${!newResident.isOwner ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
+              >
+                Tenant
+              </button>
             </div>
-            <div className="flex items-center gap-6 py-4">
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Contractual Type</span>
-               <div className="flex bg-slate-900 p-1.5 rounded-2xl border border-white/5 flex-1">
-                  {['Landlord', 'Leasee'].map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setNewResident({...newResident, isOwner: t === 'Landlord'})}
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all ${
-                        (t === 'Landlord') === newResident.isOwner ? 'bg-gold-500 text-slate-950 shadow-lg' : 'text-slate-500'
-                      }`}
-                    >
-                      {t.toUpperCase()}
-                    </button>
-                  ))}
-               </div>
-            </div>
-            <Button type="submit" className="w-full btn-luxury uppercase h-20 text-lg">Execute Enrollment</Button>
-         </form>
+          </div>
+          <Button type="submit" className="w-full bg-indigo-600 text-white h-14 font-bold rounded-2xl mt-4">Create Entry</Button>
+        </form>
       </Modal>
 
-      <Modal isOpen={showNoticeModal} onClose={() => setShowNoticeModal(false)} title="Strategic Broadcast" className="bg-white">
-         <form onSubmit={handlePostNotice} className="space-y-8">
-            <Input label="Broadcast Header" placeholder="Strategic objective header" value={newNotice.title} onChange={e => setNewNotice({...newNotice, title: e.target.value})} className="input-luxury" />
-            <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Data content</label>
-               <textarea 
-                 rows="6"
-                 placeholder="Detailed broadcast parameters..."
-                 value={newNotice.content}
-                 onChange={e => setNewNotice({...newNotice, content: e.target.value})}
-                 className="input-luxury min-h-[200px] resize-none"
-               />
-            </div>
-            <Button type="submit" className="w-full btn-luxury uppercase h-20 text-lg">Initiate Broadcast</Button>
-         </form>
+      {/* Notice Modal */}
+      <Modal isOpen={showNoticeModal} onClose={() => setShowNoticeModal(false)} title="Create New Announcement" className="bg-white">
+        <form onSubmit={handlePostNotice} className="space-y-4">
+          <Input label="Notice Title" placeholder="Maintenance Schedule" value={newNotice.title} onChange={e => setNewNotice({...newNotice, title: e.target.value})} />
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Notice Body</label>
+            <textarea 
+              rows="5"
+              placeholder="Provide details about the announcement..."
+              value={newNotice.content}
+              onChange={e => setNewNotice({...newNotice, content: e.target.value})}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20"
+            />
+          </div>
+          <Button type="submit" className="w-full bg-indigo-600 text-white h-14 font-bold rounded-2xl mt-4 shadow-lg shadow-indigo-100">Post Announcement</Button>
+        </form>
       </Modal>
     </motion.div>
   );

@@ -27,7 +27,7 @@ const NoticeBoard = ({ notices, loading }) => {
   }
 
   return (
-    <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 scrollbar-luxury">
+    <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
       {notices.map((notice) => (
         <NoticeCard 
           key={notice.id} 

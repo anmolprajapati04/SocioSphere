@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.get('/plans', authMiddleware, maintenanceController.getPlans);
 router.get('/payments', authMiddleware, maintenanceController.getPayments);
+router.get('/usage', authMiddleware, maintenanceController.getUtilityUsage);
 router.post('/payments/:id/pay', authMiddleware, maintenanceController.payMaintenance);
 router.post('/payments/:id/record', authMiddleware, maintenanceController.recordPayment);
 

@@ -24,7 +24,7 @@ exports.getPayments = async (req, res, next) => {
         {
           model: db.User,
           as: 'Resident',
-          attributes: ['name', 'flat_number'],
+          attributes: ['name', 'flat_number', 'phone'],
           where: { society_id: req.user.society_id }
         }
       ],
@@ -32,6 +32,26 @@ exports.getPayments = async (req, res, next) => {
     });
     
     res.json(payments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Get utility usage mock data (LPG, Water, Electricity)
+ */
+exports.getUtilityUsage = async (req, res, next) => {
+  try {
+    // Providing a richer set of monthly data for the report
+    const months = ['OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR'];
+    const usage = months.map(month => ({
+      month,
+      electricity: Math.floor(Math.random() * (250 - 100) + 100),
+      water: Math.floor(Math.random() * (150 - 50) + 50),
+      lpg: Math.floor(Math.random() * (60 - 20) + 20)
+    }));
+    
+    res.json(usage);
   } catch (err) {
     next(err);
   }
@@ -57,7 +77,10 @@ exports.payMaintenance = async (req, res, next) => {
       transaction_id: `TXN_${Math.random().toString(36).substr(2, 9).toUpperCase()}`
     });
 
-    res.json({ message: 'Payment successful', payment });
+    res.json({ 
+      message: `Payment successful! A confirmation receipt has been sent to ${req.user.email}`, 
+      payment 
+    });
   } catch (err) {
     next(err);
   }

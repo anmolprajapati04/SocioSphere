@@ -58,7 +58,27 @@ db.Society.hasMany(db.AuditLog, { foreignKey: 'society_id' });
 db.AuditLog.belongsTo(db.Society, { foreignKey: 'society_id' });
 db.User.hasMany(db.AuditLog, { foreignKey: 'user_id' });
 db.AuditLog.belongsTo(db.User, { foreignKey: 'user_id' });
+// Associations
 
+db.User.belongsTo(db.Society, {
+    foreignKey: "society_id",
+    as: "society"
+});
+
+db.Society.hasMany(db.User, {
+    foreignKey: "society_id",
+    as: "users"
+});
+
+db.Visitor.belongsTo(db.User, {
+    foreignKey: "resident_id",
+    as: "Resident"
+});
+
+db.User.hasMany(db.Visitor, {
+    foreignKey: "resident_id",
+    as: "visitors"
+});
 db.Society.hasMany(db.Resident, { foreignKey: 'society_id' });
 db.Resident.belongsTo(db.Society, { foreignKey: 'society_id' });
 db.User.hasOne(db.Resident, { foreignKey: 'user_id' });

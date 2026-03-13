@@ -105,10 +105,10 @@ const SecurityDashboard = () => {
   };
 
   const stats = [
-    { label: 'Active Entries', value: statsData.today, icon: UserCheck, color: 'emerald' },
-    { label: 'Pending Audits', value: statsData.pending, icon: Clock, color: 'gold' },
-    { label: 'Live Residents', value: statsData.active, icon: Users, color: 'primary' },
-    { label: 'System Scans', value: '128', icon: Scan, color: 'gold' },
+    { label: 'Today Guests', value: statsData.today, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Pending Audits', value: statsData.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Live Residents', value: statsData.active, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Security Scans', value: '128', icon: Scan, color: 'text-slate-600', bg: 'bg-slate-50' },
   ];
 
   return (
@@ -116,74 +116,66 @@ const SecurityDashboard = () => {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="p-10 space-y-12 bg-slate-50 min-h-screen text-slate-800"
+      className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
-      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row justify-between items-end gap-6">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <div className="flex items-center gap-4 mb-4">
-              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)]" />
-              <p className="text-emerald-500 font-black uppercase tracking-[0.5em] text-[10px]">Sentinel Network Active</p>
-           </div>
-           <h1 className="text-6xl font-black text-primary-900 tracking-tighter uppercase italic">
-             Tactical <span className="text-gold-500">Post</span>
-           </h1>
-           <p className="text-slate-500 font-bold uppercase tracking-[0.5em] text-[10px] mt-4">Royal Palms • Security Hub SR-01</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Security Command</h1>
+          <p className="text-slate-500 font-medium">Society Security Management • Live Gateway Access</p>
         </div>
-        <div className="flex gap-6">
-           <Button 
-             onClick={() => setShowVisModal(true)}
-             className="px-10 h-16 bg-elegant-gold text-primary-900 font-black flex items-center gap-3 hover:scale-105 active:scale-95 transition-all rounded-2xl shadow-xl shadow-elegant-gold/20"
-           >
-              <UserPlus className="w-6 h-6" /> REGISTER ENTRY
-           </Button>
-           <Button className="px-10 h-16 bg-white border border-slate-200 shadow-sm text-slate-500 font-black flex items-center gap-3 hover:bg-slate-50 transition-all rounded-2xl group">
-              <Scan className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" /> SECURE SCAN
-           </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setShowVisModal(true)}
+            className="px-6 h-12 bg-indigo-600 text-white font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all rounded-xl shadow-md shadow-indigo-100"
+          >
+            <UserPlus className="w-5 h-5" /> Register Entry
+          </Button>
+          <Button className="px-6 h-12 bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl shadow-sm">
+            <Scan className="w-5 h-5" /> Area Scan
+          </Button>
         </div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((s, i) => (
           <motion.div key={i} variants={itemVariants}>
-            <Card className="luxury-card p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.02] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="flex justify-between items-start mb-8 relative z-10">
-                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 border border-slate-200 shadow-sm
-                   ${s.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-white text-elegant-gold'}`}>
-                    <s.icon className="w-7 h-7" />
-                 </div>
-                 <div className="text-[10px] font-black tracking-widest px-3 py-1 rounded-full border border-white/5 text-slate-500 uppercase">
-                    Protocol {i + 1}
-                 </div>
+            <Card className="p-6 transition-all border-slate-100 group">
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 ${s.bg} rounded-xl flex items-center justify-center ${s.color}`}>
+                  <s.icon className="w-6 h-6" />
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-2 py-1 rounded-md">
+                  Status {i + 1}
+                </div>
               </div>
-              <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2">{s.label}</p>
-              <h3 className="text-4xl font-black text-primary-900 tracking-tighter">{s.value}</h3>
+              <p className="text-slate-500 font-semibold text-xs uppercase tracking-wider mb-1">{s.label}</p>
+              <h3 className="text-2xl font-bold text-slate-900">{s.value}</h3>
             </Card>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-10">
+      <div className="grid lg:grid-cols-3 gap-8">
         <motion.div variants={itemVariants} className="lg:col-span-2">
-           <Card className="luxury-card overflow-hidden">
-              <div className="p-12 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                 <h3 className="text-3xl font-black text-primary-900 tracking-tighter uppercase italic flex items-center gap-4">
-                    <Activity className="w-8 h-8 text-emerald-500" />
-                    Entry <span className="text-gold-500">Manifest</span>
-                 </h3>
-                 <Badge variant="success" className="px-5 py-2 rounded-xl text-[10px] font-black tracking-[0.2em] bg-emerald-500 text-slate-950">LIVE STREAM</Badge>
+           <Card className="overflow-hidden">
+              <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                 <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Entry Manifest</h3>
+                 </div>
+                 <Badge variant="success" className="bg-emerald-50 text-emerald-600 border-none">Live Access</Badge>
               </div>
               <div className="overflow-x-auto">
                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                    <thead className="bg-[#f8fafc] text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                        <tr>
-                          <th className="px-12 py-8">Subject / Objective</th>
-                          <th className="px-12 py-8">Credential</th>
-                          <th className="px-12 py-8">Status</th>
-                          <th className="px-12 py-8 text-right">Process</th>
+                          <th className="px-8 py-4">Subject / Purpose</th>
+                          <th className="px-8 py-4">Credential</th>
+                          <th className="px-8 py-4">Status</th>
+                          <th className="px-8 py-4 text-right">Action</th>
                        </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-slate-100">
                        <AnimatePresence>
                           {visitors.map(v => (
                             <motion.tr 
@@ -191,43 +183,44 @@ const SecurityDashboard = () => {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}
                               key={v.id} 
-                              className="hover:bg-slate-50 transition-colors group"
+                              className="hover:bg-slate-50/50 transition-colors group"
                             >
-                               <td className="px-12 py-10">
-                                  <div className="font-black text-primary-900 text-lg group-hover:text-elegant-gold transition-colors uppercase italic">{v.name}</div>
-                                  <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mt-2">
-                                    PURPOSE: {v.purpose || 'UNSPECIFIED'}
+                               <td className="px-8 py-6">
+                                  <div className="font-bold text-slate-900">{v.name}</div>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                    {v.purpose || 'General Entry'}
                                   </div>
                                </td>
-                               <td className="px-12 py-10 text-sm font-bold text-slate-400">{v.phone}</td>
-                               <td className="px-12 py-10">
-                                  <div className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-lg inline-block
-                                    ${v.exit_time ? 'bg-slate-50 border border-slate-200 shadow-sm text-slate-600' : 'bg-emerald-500/10 text-emerald-600 animate-pulse'}`}>
-                                     {v.exit_time ? 'ARCHIVED' : 'ON-SITE'}
+                               <td className="px-8 py-6 text-sm font-semibold text-slate-500">{v.phone}</td>
+                               <td className="px-8 py-6">
+                                  <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider inline-block
+                                    ${v.exit_time ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-600 animate-pulse'}`}>
+                                     {v.exit_time ? 'Checked Out' : 'On Site'}
                                   </div>
                                </td>
-                               <td className="px-12 py-10 text-right">
+                               <td className="px-8 py-6 text-right">
                                   {v.exit_time ? (
-                                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-end gap-2">
-                                       <CheckCircle2 className="w-3 h-3" /> {new Date(v.exit_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-end gap-2">
+                                       <CheckCircle2 className="w-3.5 h-3.5" /> {new Date(v.exit_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   ) : (
                                     <Button 
                                       onClick={() => handleCheckout(v.id)}
-                                      className="px-6 h-10 bg-white border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.1em] rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all shadow-sm"
-                                    >TERMINATE EXIT</Button>
+                                      className="px-4 py-2 border border-slate-200 text-slate-500 text-xs font-bold rounded-lg hover:border-rose-500 hover:text-rose-600 transition-all"
+                                    >Checkout</Button>
                                   )}
                                </td>
                             </motion.tr>
                           ))}
                           {visitors.length === 0 && !loading && (
                              <tr>
-                               <td colSpan="4" className="px-12 py-32 text-center">
-                                  <div className="flex flex-col items-center gap-6">
-                                     <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center text-slate-700">
+                               <td colSpan="4" className="px-8 py-24 text-center">
+                                  <div className="flex flex-col items-center">
+                                     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
                                         <Scan className="w-8 h-8" />
                                      </div>
-                                     <p className="text-slate-600 font-black uppercase tracking-[0.4em] text-xs">Awaiting Matrix Data • No Entries</p>
+                                     <p className="text-slate-500 font-bold text-sm">No active entries</p>
+                                     <p className="text-slate-400 text-xs mt-1">Awaiting visitor registration</p>
                                   </div>
                                </td>
                              </tr>
@@ -240,73 +233,85 @@ const SecurityDashboard = () => {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-           <Card className="luxury-card p-12">
-              <h3 className="text-2xl font-black text-primary-900 tracking-tighter mb-12 uppercase italic">Tactical <span className="text-gold-500">Actions</span></h3>
-              <div className="space-y-6">
+           <Card className="p-8">
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-8">Security Actions</h3>
+              <div className="space-y-4">
                  {[
-                   { label: 'Panic Protocol', icon: AlertTriangle, color: 'red' },
-                   { label: 'Vehicle Matrix', icon: Building2, color: 'blue' },
-                   { label: 'Grid Status', icon: Scan, color: 'gold' },
-                   { label: 'Registry Sync', icon: Users, color: 'gold' },
+                   { label: 'Panic Protocol', icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50' },
+                   { label: 'Vehicle Matrix', icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                   { label: 'Grid Status', icon: Scan, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                   { label: 'Registry Sync', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50' },
                  ].map((action, i) => (
                    <motion.button
-                     whileHover={{ x: 8, backgroundColor: 'rgba(255,255,255,0.03)' }}
+                     whileHover={{ x: 4, backgroundColor: '#f8fafc' }}
                      whileTap={{ scale: 0.98 }}
                      key={i}
-                     className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-white/5 transition-all group"
+                     className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 transition-all group shadow-sm"
                    >
-                      <div className="flex items-center gap-6">
-                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors
-                           ${action.color === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-slate-900 text-gold-500'}`}>
-                            <action.icon className="w-6 h-6" />
+                      <div className="flex items-center gap-4">
+                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${action.bg} ${action.color}`}>
+                            <action.icon className="w-5 h-5" />
                          </div>
-                         <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-primary-900 transition-colors">{action.label}</span>
+                         <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">{action.label}</span>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-700 group-hover:text-gold-500 transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
                    </motion.button>
                  ))}
               </div>
-              <div className="mt-12 p-8 bg-gold-500/5 border border-gold-500/20 rounded-3xl">
-                 <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.3em] mb-2 leading-loose">Automated backup active. All telemetry mirrored to Admin Command Center.</p>
+              <div className="mt-8 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                 <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider mb-2">System Status</p>
+                 <p className="text-[12px] font-medium text-slate-600 leading-relaxed">Automated backup active. All telemetry data is synchronized with the central society command center in real-time.</p>
               </div>
            </Card>
         </motion.div>
       </div>
 
-      <Modal isOpen={showVisModal} onClose={() => setShowVisModal(false)} title="Strategic Entry Registration" className="bg-white">
-         <form onSubmit={handleRegisterVisitor} className="space-y-8">
-            <Input label="Subject Name" placeholder="Full legal name" value={newVisitor.name} onChange={e => setNewVisitor({...newVisitor, name: e.target.value})} className="input-luxury" />
-            <Input label="Credential Primary" placeholder="Contact number" value={newVisitor.phone} onChange={e => setNewVisitor({...newVisitor, phone: e.target.value})} className="input-luxury" />
+      <Modal isOpen={showVisModal} onClose={() => setShowVisModal(false)} title="Register New Entry" className="bg-white">
+         <form onSubmit={handleRegisterVisitor} className="space-y-5">
+            <Input 
+              label="Visitor Name" 
+              placeholder="e.g., John Doe" 
+              value={newVisitor.name} 
+              onChange={e => setNewVisitor({...newVisitor, name: e.target.value})} 
+            />
+            <Input 
+              label="Contact Number" 
+              placeholder="+91 XXXXX XXXXX" 
+              value={newVisitor.phone} 
+              onChange={e => setNewVisitor({...newVisitor, phone: e.target.value})} 
+            />
             
-            <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Target Resident Node</label>
+            <div className="space-y-2">
+               <label className="text-sm font-bold text-slate-700">Destination Resident</label>
                <select 
                  value={newVisitor.resident_id}
                  onChange={e => setNewVisitor({...newVisitor, resident_id: e.target.value})}
-                 className="input-luxury appearance-none cursor-pointer"
+                 className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 ring-indigo-500/20 transition-all appearance-none cursor-pointer"
                  required
                >
-                  <option value="" disabled className="bg-white">Select Destination</option>
+                  <option value="" disabled>Select wing and flat</option>
                   {residents.map(r => (
-                    <option key={r.id} value={r.id} className="bg-white text-primary-900 font-bold">
+                    <option key={r.id} value={r.id}>
                        {r.User?.name} ({r.wing}-{r.flat_number})
                     </option>
                   ))}
                </select>
             </div>
 
-            <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Objective of Entry</label>
+            <div className="space-y-2">
+               <label className="text-sm font-bold text-slate-700">Purpose of Visit</label>
                <textarea 
                  rows="4"
-                 placeholder="State specific purpose..."
+                 placeholder="e.g., Delivery, Personal visit..."
                  value={newVisitor.purpose}
                  onChange={e => setNewVisitor({...newVisitor, purpose: e.target.value})}
-                 className="input-luxury min-h-[120px] resize-none"
+                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium outline-none focus:ring-2 ring-indigo-500/20 transition-all min-h-[120px] resize-none"
                />
             </div>
 
-            <Button type="submit" className="w-full btn-luxury uppercase h-20 text-lg shadow-2xl">Execute Entry</Button>
+            <Button type="submit" className="w-full bg-indigo-600 text-white h-14 font-bold rounded-2xl mt-4 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+               Complete Registration
+            </Button>
          </form>
       </Modal>
     </motion.div>

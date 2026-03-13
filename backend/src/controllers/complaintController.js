@@ -43,7 +43,7 @@ exports.getAllComplaints = async (req, res, next) => {
         {
           model: db.User,
           as: "User",
-          attributes: ["name", "flat_number"]
+          attributes: ["name", "flat_number", "phone", "role"]
         }
       ],
 
