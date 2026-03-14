@@ -3,6 +3,12 @@ const { authMiddleware } = require('../middlewares/authMiddleware');
 const { roleMiddleware } = require('../middlewares/roleMiddleware');
 const db = require('../models');
 
+// -----------------------------------------------------
+// GET ALL RESIDENTS
+// Only Admin can access this route
+// Returns all residents belonging to the same society
+// -----------------------------------------------------
+
 const router = express.Router();
 
 router.get(
@@ -22,6 +28,10 @@ router.get(
     }
   }
 );
+// -----------------------------------------------------
+// UPDATE RESIDENT DETAILS
+// Admin can update resident information
+// -----------------------------------------------------
 
 router.post(
   '/',
@@ -48,6 +58,10 @@ router.post(
     }
   }
 );
+// -----------------------------------------------------
+// UPDATE RESIDENT DETAILS
+// Admin can update resident information
+// -----------------------------------------------------
 
 router.put('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, next) => {
   try {
@@ -59,6 +73,10 @@ router.put('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, n
     next(e);
   }
 });
+// -----------------------------------------------------
+// DELETE RESIDENT
+// Admin can remove a resident from the society
+// -----------------------------------------------------
 
 router.delete('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, next) => {
   try {
