@@ -16,7 +16,7 @@ router.get(
         include: [{ model: db.User, attributes: ['id', 'name', 'email', 'phone'] }],
         order: [['createdAt', 'DESC']],
       });
-      res.json(residents);
+      res.json({ success: true, data: residents });
     } catch (e) {
       next(e);
     }
@@ -42,7 +42,7 @@ router.post(
         wing,
         is_owner: Boolean(is_owner),
       });
-      res.status(201).json(resident);
+      res.status(201).json({ success: true, data: resident });
     } catch (e) {
       next(e);
     }
@@ -54,7 +54,7 @@ router.put('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res, n
     const resident = await db.Resident.findOne({ where: { id: req.params.id, society_id: req.user.society_id } });
     if (!resident) return res.status(404).json({ message: 'Resident not found' });
     await resident.update(req.body);
-    res.json(resident);
+    res.json({ success: true, data: resident });
   } catch (e) {
     next(e);
   }
@@ -65,7 +65,7 @@ router.delete('/:id', authMiddleware, roleMiddleware(['Admin']), async (req, res
     const resident = await db.Resident.findOne({ where: { id: req.params.id, society_id: req.user.society_id } });
     if (!resident) return res.status(404).json({ message: 'Resident not found' });
     await resident.destroy();
-    res.json({ message: 'Resident removed' });
+    res.json({ success: true, message: 'Resident removed' });
   } catch (e) {
     next(e);
   }

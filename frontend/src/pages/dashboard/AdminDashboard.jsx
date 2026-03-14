@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
+import socket from '../../utils/socket';
 import { 
   Users, 
   AlertCircle, 
@@ -15,7 +16,8 @@ import {
   Search,
   ArrowUpRight,
   ArrowDownRight,
-  CheckCircle2
+  CheckCircle2,
+  Bell
 } from 'lucide-react';
 import { 
   Chart as ChartJS, 
@@ -90,9 +92,13 @@ const AdminDashboard = () => {
         api.get('/notices'),
         api.get('/dashboard/growth')
       ]);
-      setData({ ...dashResp.data, complaints: compResp.data, notices: noticeResp.data });
-      setResidents(resResp.data);
-      setGrowthData(growthResp.data);
+      setData({ 
+        ...dashResp.data.data, 
+        complaints: compResp.data.data || [], 
+        notices: noticeResp.data.data || [] 
+      });
+      setResidents(resResp.data.data || []);
+      setGrowthData(growthResp.data.data || []);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -104,32 +110,88 @@ const AdminDashboard = () => {
     setDetailsType(type);
     try {
       if (type === 'residents') {
-        setDetailsData(residents);
+        setDetailsData(Array.isArray(residents) ? residents : []);
       } else if (type === 'collection') {
         const resp = await api.get('/maintenance/payments?status=PAID');
-        setDetailsData(resp.data);
+        setDetailsData(resp.data.data || []);
       } else if (type === 'complaints') {
         const resp = await api.get('/complaints');
-        setDetailsData(resp.data);
+        setDetailsData(resp.data.data || []);
       } else if (type === 'defaulters') {
         const resp = await api.get('/maintenance/payments?status=OVERDUE');
-        setDetailsData(resp.data);
+        setDetailsData(resp.data.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch details:', err);
     }
   };
 
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
   useEffect(() => {
     fetchData();
-    
-    const socket = io('http://localhost:5000');
-    
-    socket.on('new_complaint', () => fetchData());
-    socket.on('new_notice', () => fetchData());
-    socket.on('new_visitor', () => fetchData());
 
-    return () => socket.disconnect();
+    if (authUser?.society_id) {
+      console.log(`Joining society room: society_${authUser.society_id}`);
+      socket.emit('join_society', authUser.society_id);
+    }
+    
+    socket.on('new_complaint', (complaint) => {
+      console.log('Received new_complaint:', complaint);
+      if (complaint.society_id === authUser?.society_id) {
+        addNotification(`📝 New complaint: "${complaint.title}"`);
+        setData(prev => ({
+          ...prev,
+          complaints: [complaint, ...(prev.complaints || [])],
+          totalComplaints: (prev.totalComplaints || 0) + 1
+        }));
+      }
+    });
+
+    socket.on('new_resident', (resident) => {
+      console.log('Received new_resident:', resident);
+      if (resident.society_id === authUser?.society_id) {
+        addNotification(`🏠 New resident enrolled: ${resident.name}`);
+        setResidents(prev => [resident, ...(prev || [])]);
+        setData(prev => ({ ...prev, residentsCount: (prev.residentsCount || 0) + 1 }));
+      }
+    });
+
+    socket.on('new_notice', (notice) => {
+      console.log('Received new_notice (broadcast confirmation):', notice);
+      if (notice.society_id === authUser?.society_id) {
+        addNotification("📢 Society notice broadcasted");
+        setData(prev => ({
+          ...prev,
+          notices: [notice, ...(prev.notices || [])]
+        }));
+      }
+    });
+
+    socket.on('visitor_status_update', (visitor) => {
+      console.log('Received visitor_status_update:', visitor);
+      setData(prev => ({
+        ...prev,
+        visitorAnalytics: { today: (prev.visitorAnalytics?.today || 0) } 
+      }));
+      // Optional: Update list if visible
+    });
+
+    return () => {
+      console.log('Cleaning up socket listeners for AdminDashboard');
+      socket.off('new_complaint');
+      socket.off('new_resident');
+      socket.off('new_notice');
+      socket.off('visitor_status_update');
+    };
   }, [authUser?.society_id]);
 
   const stats = [
@@ -142,7 +204,7 @@ const AdminDashboard = () => {
   const handleAddResident = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/auth/register', {
+      const resp = await api.post('/auth/register', {
         ...newResident,
         password: 'Password123!',
         role: 'Resident',
@@ -150,7 +212,9 @@ const AdminDashboard = () => {
         society_id: authSocietyId || authUser?.society_id
       });
       setShowResModal(false);
-      fetchData();
+      const enrolledResident = resp.data.data.user;
+      setResidents(prev => [enrolledResident, ...(prev || [])]);
+      setData(prev => ({ ...prev, residentsCount: (prev.residentsCount || 0) + 1 }));
       setNewResident({ name: '', email: '', phone: '', wing: '', flat: '', isOwner: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Error enrolling resident');
@@ -175,9 +239,13 @@ const AdminDashboard = () => {
   const handlePostNotice = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/notices', newNotice);
+      const resp = await api.post('/notices', newNotice);
       setShowNoticeModal(false);
-      fetchData();
+      const postedNotice = resp.data.data;
+      setData(prev => ({
+        ...prev,
+        notices: [postedNotice, ...(prev.notices || [])]
+      }));
       setNewNotice({ title: '', content: '' });
     } catch (err) {
       alert(err.response?.data?.message || 'Error deploying notice');
@@ -191,6 +259,26 @@ const AdminDashboard = () => {
       variants={containerVariants}
       className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
+      {/* Real-time Notifications */}
+      <div className="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none">
+        <AnimatePresence>
+          {notifications.map(n => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              className="px-6 py-4 bg-white border border-indigo-100 rounded-2xl shadow-xl shadow-indigo-100/50 flex items-center gap-4 pointer-events-auto min-w-[300px]"
+            >
+              <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 flex-shrink-0">
+                <Bell className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-bold text-slate-900">{n.message}</p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
@@ -267,7 +355,7 @@ const AdminDashboard = () => {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400">
                 <TrendingUp className="w-12 h-12 mb-2 opacity-20" />
-                <p className="font-semibold">Loading charts...</p>
+                <p className="font-semibold">No revenue data available yet</p>
               </div>
             )}
           </div>
@@ -343,7 +431,7 @@ const AdminDashboard = () => {
         className="max-w-4xl bg-white p-2"
       >
         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-4 custom-scrollbar">
-          {detailsType === 'residents' && (
+          {detailsType === 'residents' && Array.isArray(detailsData) && (
             <div className="grid gap-4">
               {detailsData.map((r, i) => (
                 <div key={i} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center hover:bg-slate-50 transition-colors">
@@ -364,7 +452,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {(detailsType === 'collection' || detailsType === 'defaulters') && (
+          {detailsType === 'collection' || detailsType === 'defaulters' && Array.isArray(detailsData) && (
             <div className="grid gap-4">
               {detailsData.map((p, i) => (
                 <div key={i} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center hover:bg-slate-50 transition-colors">
@@ -383,7 +471,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {detailsType === 'complaints' && (
+          {detailsType === 'complaints' && Array.isArray(detailsData) && (
             <div className="grid gap-4">
               {detailsData.map((c, i) => (
                 <div key={i} className="p-6 border border-slate-100 rounded-2xl space-y-3 hover:bg-slate-50 transition-colors">

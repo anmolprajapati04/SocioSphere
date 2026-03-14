@@ -1,6 +1,7 @@
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles/global.css';
 import './styles/layout.css';
 import './styles/dashboard.css';
@@ -10,9 +11,11 @@ import './styles/cards.css';
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppRoutes />
-      </ToastProvider>
+      <ErrorBoundary>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

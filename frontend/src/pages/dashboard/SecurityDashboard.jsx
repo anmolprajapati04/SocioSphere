@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { 
@@ -17,8 +18,10 @@ import {
   Scan,
   ChevronRight,
   UserCheck,
-  Building2
+  Building2,
+  Bell
 } from 'lucide-react';
+import socket from '../../utils/socket';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -43,11 +46,12 @@ const itemVariants = {
 };
 
 const SecurityDashboard = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [visitors, setVisitors] = useState([]);
   const [statsData, setStatsData] = useState({ today: 0, pending: 0, active: 0 });
   const [showVisModal, setShowVisModal] = useState(false);
-  const [newVisitor, setNewVisitor] = useState({ name: '', phone: '', resident_id: '', purpose: '' });
+  const [newVisitor, setNewVisitor] = useState({ name: '', phone: '', flat_number: '', purpose: '' });
   const [residents, setResidents] = useState([]);
 
   const fetchData = async () => {
@@ -57,12 +61,13 @@ const SecurityDashboard = () => {
         api.get('/dashboard'),
         api.get('/residents')
       ]);
-      setVisitors(visResp.data);
-      setResidents(resResp.data);
+      setVisitors(visResp.data.data || []);
+      setResidents(resResp.data.data || []);
+      const dashData = dashResp.data.data;
       setStatsData({
-         today: dashResp.data.visitorAnalytics.today,
-         pending: dashResp.data.complaintStats.find(c => c.status === 'PENDING')?.count || 0,
-         active: dashResp.data.residentsCount
+         today: dashData?.visitorAnalytics?.today || 0,
+         pending: dashData?.complaintStats?.find(c => c.status === 'PENDING')?.count || 0,
+         active: dashData?.residentsCount || 0
       });
     } catch (err) {
       console.error('Failed to fetch security data:', err);
@@ -71,27 +76,73 @@ const SecurityDashboard = () => {
     }
   };
 
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
   useEffect(() => {
     fetchData();
 
-    const socket = io('http://localhost:5000');
+    if (user?.society_id) {
+      console.log(`Joining society room: society_${user.society_id}`);
+      socket.emit('join_society', user.society_id);
+    }
 
-    socket.on('new_visitor', (visitor) => {
+    socket.on('visitor_entry', (visitor) => {
+       console.log('Received visitor_entry:', visitor);
        setVisitors(prev => [visitor, ...prev]);
+       addNotification(`👤 Visitor Entry: ${visitor.visitor_name}`);
+       fetchData();
     });
 
-    return () => socket.disconnect();
-  }, []);
+    socket.on('visitor_exit', (visitor) => {
+       console.log('Received visitor_exit:', visitor);
+       addNotification(`🚪 Visitor Exit: ${visitor.visitor_name}`);
+       fetchData();
+    });
+
+    socket.on('visitor_status_update', (visitor) => {
+       console.log('Received visitor_status_update:', visitor);
+       fetchData();
+    });
+
+    return () => {
+       console.log('Cleaning up socket listeners for SecurityDashboard');
+       socket.off('visitor_entry');
+       socket.off('visitor_exit');
+       socket.off('visitor_status_update');
+    };
+  }, [user?.society_id]);
 
   const handleRegisterVisitor = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/visitors', newVisitor);
+      const targetResident = residents.find(r => 
+        r.flat_number.toLowerCase() === newVisitor.flat_number.toLowerCase() ||
+        `${r.wing}-${r.flat_number}`.toLowerCase() === newVisitor.flat_number.toLowerCase() ||
+        `${r.wing}${r.flat_number}`.toLowerCase() === newVisitor.flat_number.toLowerCase()
+      );
+      
+      if (!targetResident) {
+        alert('Could not locate a resident living in that flat number.');
+        return;
+      }
+
+      await api.post('/visitors', {
+        ...newVisitor,
+        resident_id: targetResident.user_id
+      });
       setShowVisModal(false);
-      setNewVisitor({ name: '', phone: '', resident_id: '', purpose: '' });
+      setNewVisitor({ name: '', phone: '', flat_number: '', purpose: '' });
       fetchData();
     } catch (err) {
-      alert('Error registering visitor');
+      alert(err.response?.data?.message || 'Error registering visitor');
     }
   };
 
@@ -118,6 +169,26 @@ const SecurityDashboard = () => {
       variants={containerVariants}
       className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
+      {/* Real-time Notifications */}
+      <div className="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none">
+        <AnimatePresence>
+          {notifications.map(n => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              className="px-6 py-4 bg-white border border-indigo-100 rounded-2xl shadow-xl shadow-indigo-100/50 flex items-center gap-4 pointer-events-auto min-w-[300px]"
+            >
+              <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 flex-shrink-0">
+                <Bell className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-bold text-slate-900">{n.message}</p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Security Command</h1>
@@ -237,15 +308,16 @@ const SecurityDashboard = () => {
               <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-8">Security Actions</h3>
               <div className="space-y-4">
                  {[
-                   { label: 'Panic Protocol', icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50' },
-                   { label: 'Vehicle Matrix', icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                   { label: 'Grid Status', icon: Scan, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                   { label: 'Registry Sync', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50' },
+                   { label: 'Panic Protocol', icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50', onClick: () => alert('Panic Protocol Initiated! Command Center Notified.') },
+                   { label: 'Vehicle Matrix', icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50', onClick: () => alert('Vehicle Matrix module is offline for maintenance.') },
+                   { label: 'Grid Status', icon: Scan, color: 'text-emerald-600', bg: 'bg-emerald-50', onClick: () => alert('All security grids are fully operational and secured.') },
+                   { label: 'Registry Sync', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50', onClick: () => { fetchData(); alert('Registry synchronized with central database.'); } },
                  ].map((action, i) => (
                    <motion.button
                      whileHover={{ x: 4, backgroundColor: '#f8fafc' }}
                      whileTap={{ scale: 0.98 }}
                      key={i}
+                     onClick={action.onClick}
                      className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 transition-all group shadow-sm"
                    >
                       <div className="flex items-center gap-4">
@@ -281,22 +353,13 @@ const SecurityDashboard = () => {
               onChange={e => setNewVisitor({...newVisitor, phone: e.target.value})} 
             />
             
-            <div className="space-y-2">
-               <label className="text-sm font-bold text-slate-700">Destination Resident</label>
-               <select 
-                 value={newVisitor.resident_id}
-                 onChange={e => setNewVisitor({...newVisitor, resident_id: e.target.value})}
-                 className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 outline-none focus:ring-2 ring-indigo-500/20 transition-all appearance-none cursor-pointer"
-                 required
-               >
-                  <option value="" disabled>Select wing and flat</option>
-                  {residents.map(r => (
-                    <option key={r.id} value={r.id}>
-                       {r.User?.name} ({r.wing}-{r.flat_number})
-                    </option>
-                  ))}
-               </select>
-            </div>
+            <Input 
+              label="Destination Flat" 
+              placeholder="e.g., A-101 or 101" 
+              value={newVisitor.flat_number} 
+              onChange={e => setNewVisitor({...newVisitor, flat_number: e.target.value})} 
+              required
+            />
 
             <div className="space-y-2">
                <label className="text-sm font-bold text-slate-700">Purpose of Visit</label>

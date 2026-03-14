@@ -36,13 +36,16 @@ router.get('/', authMiddleware, async (req, res, next) => {
       ]);
 
     res.json({
-      residentsCount,
-      maintenanceRevenue: revenueSum || 0,
-      complaintStats: complaintsByStatus,
-      visitorAnalytics: { today: visitorsToday },
-      paymentDefaulters: defaultersCount,
-      totalComplaints,
-      society_id: societyId,
+      success: true,
+      data: {
+        residentsCount,
+        maintenanceRevenue: revenueSum || 0,
+        complaintStats: complaintsByStatus,
+        visitorAnalytics: { today: visitorsToday },
+        paymentDefaulters: defaultersCount,
+        totalComplaints,
+        society_id: societyId,
+      }
     });
   } catch (err) {
     next(err);
@@ -72,7 +75,10 @@ router.get('/growth', authMiddleware, async (req, res, next) => {
       order: [[db.Sequelize.fn('MONTH', db.Sequelize.col('created_at')), 'ASC']]
     });
 
-    res.json(payments);
+    res.json({
+      success: true,
+      data: payments
+    });
   } catch (err) {
     next(err);
   }

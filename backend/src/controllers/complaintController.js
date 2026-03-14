@@ -14,11 +14,16 @@ exports.createComplaint = async (req, res, next) => {
       status: "PENDING"
     });
 
-    if (req.io) {
-      req.io.emit("new_complaint", complaint);
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Emitting new_complaint to society_${req.user.society_id}`);
+      io.to(`society_${req.user.society_id}`).emit("new_complaint", complaint);
     }
 
-    res.status(201).json(complaint);
+    res.status(201).json({
+      success: true,
+      data: complaint
+    });
 
   } catch (err) {
     next(err);
@@ -50,7 +55,10 @@ exports.getAllComplaints = async (req, res, next) => {
       order: [["created_at", "DESC"]]
     });
 
-    res.json(complaints);
+    res.json({
+      success: true,
+      data: complaints
+    });
 
   } catch (err) {
     next(err);
@@ -89,11 +97,16 @@ exports.updateComplaint = async (req, res, next) => {
       admin_response
     });
 
-    if (req.io) {
-      req.io.emit("complaint_update", complaint);
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Emitting complaint_status_update to society_${req.user.society_id}`);
+      io.to(`society_${req.user.society_id}`).emit("complaint_status_update", complaint);
     }
 
-    res.json(complaint);
+    res.json({
+      success: true,
+      data: complaint
+    });
 
   } catch (err) {
     next(err);

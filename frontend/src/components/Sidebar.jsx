@@ -28,6 +28,7 @@ const Sidebar = () => {
       return [
         { to: '/admin', label: 'Console', icon: LayoutDashboard },
         { to: '/residents', label: 'Residents', icon: Users },
+        { to: '/admin/maintenance', label: 'Finance', icon: CreditCard },
         { to: '/complaints', label: 'Control', icon: AlertCircle },
         ...base
       ];

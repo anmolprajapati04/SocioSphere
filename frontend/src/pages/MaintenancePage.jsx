@@ -23,7 +23,7 @@ export default function MaintenancePage() {
     setLoading(true);
     api
       .get('/maintenance/payments')
-      .then((r) => setPayments(r.data || []))
+      .then((r) => setPayments(r.data?.data || []))
       .catch(() => setPayments([]))
       .finally(() => setLoading(false));
   }

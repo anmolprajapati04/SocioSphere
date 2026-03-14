@@ -31,7 +31,10 @@ exports.getPayments = async (req, res, next) => {
       order: [['created_at', 'DESC']]
     });
     
-    res.json(payments);
+    res.json({
+      success: true,
+      data: payments
+    });
   } catch (err) {
     next(err);
   }
@@ -51,7 +54,10 @@ exports.getUtilityUsage = async (req, res, next) => {
       lpg: Math.floor(Math.random() * (60 - 20) + 20)
     }));
     
-    res.json(usage);
+    res.json({
+      success: true,
+      data: usage
+    });
   } catch (err) {
     next(err);
   }
@@ -78,8 +84,11 @@ exports.payMaintenance = async (req, res, next) => {
     });
 
     res.json({ 
-      message: `Payment successful! A confirmation receipt has been sent to ${req.user.email}`, 
-      payment 
+      success: true,
+      data: {
+        message: `Payment successful! A confirmation receipt has been sent to ${req.user.email}`, 
+        payment 
+      }
     });
   } catch (err) {
     next(err);
@@ -102,7 +111,13 @@ exports.recordPayment = async (req, res, next) => {
       remarks: req.body.remarks || 'Manually recorded'
     });
 
-    res.json({ message: 'Payment recorded successfully', payment });
+    res.json({ 
+      success: true,
+      data: {
+        message: 'Payment recorded successfully', 
+        payment 
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -116,7 +131,10 @@ exports.getPlans = async (req, res, next) => {
     const plans = await db.MaintenancePlan.findAll({
       where: { society_id: req.user.society_id }
     });
-    res.json(plans);
+    res.json({
+      success: true,
+      data: plans
+    });
   } catch (err) {
     next(err);
   }

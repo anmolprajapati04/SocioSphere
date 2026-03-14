@@ -48,6 +48,20 @@ async function register(req, res, next) {
         wing: req.body.wing || 'A',
         is_owner: req.body.is_owner !== false
       });
+
+      // Broadcast new resident to Admin
+      const io = req.app.get('io');
+      if (io) {
+        console.log(`Emitting new_resident to society_${societyId}`);
+        io.to(`society_${societyId}`).emit('new_resident', {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          flat_number: user.flat_number,
+          role: user.role,
+          society_id: user.society_id
+        });
+      }
     }
 
     const token = jwt.sign(
@@ -57,8 +71,11 @@ async function register(req, res, next) {
     );
 
     return res.status(201).json({
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
-      token
+      success: true,
+      data: {
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
+        token
+      }
     });
   } catch (err) {
     return next(err);
@@ -90,9 +107,12 @@ async function login(req, res, next) {
     );
 
     return res.json({
-      message: 'Login successful',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
-      token
+      success: true,
+      data: {
+        message: 'Login successful',
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, society_id: user.society_id },
+        token
+      }
     });
   } catch (err) {
     return next(err);

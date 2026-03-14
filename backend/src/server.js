@@ -62,34 +62,40 @@ async function start() {
       }
     });
 
-    // Make socket available in controllers
-    app.use((req, res, next) => {
-      req.io = io;
-      next();
-    });
+    // Make socket available in controllers via app settings
+    app.set("io", io);
 
     /* ---------- Socket Events ---------- */
 
     io.on("connection", (socket) => {
+      console.log("Client connected:", socket.id);
 
-      socket.on("visitor_request", (payload) => {
-        io.emit("visitor_request", payload);
+      socket.on("join_society", (societyId) => {
+        if (societyId) {
+          socket.join(`society_${societyId}`);
+          console.log(`Socket ${socket.id} joined society_${societyId}`);
+        }
       });
 
-      socket.on("visitor_approved", (payload) => {
-        io.emit("visitor_approved", payload);
+      socket.on("disconnect", () => {
+        console.log("Client disconnected:", socket.id);
       });
 
-      socket.on("complaint_update", (payload) => {
-        io.emit("complaint_update", payload);
-      });
-
+      // Legacy listeners (optional if moving to controller-based emits)
       socket.on("emergency_alert", (payload) => {
-        io.emit("emergency_alert", payload);
+        if (payload.society_id) {
+          io.to(`society_${payload.society_id}`).emit("emergency_alert", payload);
+        } else {
+          io.emit("emergency_alert", payload);
+        }
       });
 
       socket.on("chat_message", (payload) => {
-        io.emit("chat_message", payload);
+        if (payload.society_id) {
+          io.to(`society_${payload.society_id}`).emit("chat_message", payload);
+        } else {
+          io.emit("chat_message", payload);
+        }
       });
 
     });

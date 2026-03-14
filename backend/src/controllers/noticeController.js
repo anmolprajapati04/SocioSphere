@@ -9,7 +9,10 @@ exports.getAllNotices = async (req, res, next) => {
       where: { society_id: req.user.society_id },
       order: [['createdAt', 'DESC']]
     });
-    res.json(notices);
+    res.json({
+      success: true,
+      data: notices
+    });
   } catch (err) {
     next(err);
   }
@@ -29,12 +32,17 @@ exports.createNotice = async (req, res, next) => {
       valid_to: req.body.valid_to
     });
 
-    // Broadcast via socket.io (if attached to req)
-    if (req.io) {
-      req.io.emit('new_notice', notice);
+    // Broadcast via socket.io
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Emitting new_notice to society_${req.user.society_id}`);
+      io.to(`society_${req.user.society_id}`).emit('new_notice', notice);
     }
 
-    res.status(201).json(notice);
+    res.status(201).json({
+      success: true,
+      data: notice
+    });
   } catch (err) {
     next(err);
   }

@@ -5,26 +5,34 @@ const db = require('../models');
  */
 exports.createVisitor = async (req, res, next) => {
   try {
+    const visitor_name = req.body.visitor_name || req.body.name;
+    const resident_id = (req.user.role === 'Security' || req.user.role === 'Admin') 
+      ? req.body.resident_id 
+      : req.user.id;
+    
+    const initialStatus = req.user.role === 'Security' ? 'IN' : 'PENDING';
+
     const visitor = await db.Visitor.create({
-      visitor_name: req.body.visitor_name,
+      visitor_name,
       phone: req.body.phone,
       purpose: req.body.purpose,
-      resident_id: req.user.id, // Authenticated resident
-      status: 'PENDING'
+      resident_id,
+      status: initialStatus
     });
 
-    // Broadcast new visitor request to Security and Admin
-    if (req.io) {
-      req.io.emit('visitor_request', { 
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Emitting visitor_request to society_${req.user.society_id}`);
+      io.to(`society_${req.user.society_id}`).emit('visitor_request', { 
         ...visitor.toJSON(), 
         resident_name: req.user.name 
       });
+      io.to(`society_${req.user.society_id}`).emit('new_visitor', visitor);
     }
-
-    if (req.io) {
-      req.io.emit('new_visitor', visitor);
-    }
-    res.status(201).json(visitor);
+    res.status(201).json({
+      success: true,
+      data: visitor
+    });
   } catch (err) {
     next(err);
   }
@@ -57,7 +65,10 @@ exports.getAllVisitors = async (req, res, next) => {
       order: [['created_at', 'DESC']]
     });
     
-    res.json(visitors);
+    res.json({
+      success: true,
+      data: visitors
+    });
   } catch (err) {
     next(err);
   }
@@ -75,20 +86,26 @@ exports.updateVisitorStatus = async (req, res, next) => {
     if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
     const updateData = { status };
-    if (status === 'IN') {
+    if (status === 'IN' || status === 'APPROVED') {
       updateData.entry_time = new Date();
-    } else if (status === 'OUT') {
+    } else if (status === 'OUT' || status === 'REJECTED') {
       updateData.exit_time = new Date();
     }
 
     await visitor.update(updateData);
 
-    // Broadcast update to Resident and Security
-    if (req.io) {
-      req.io.emit('visitor_status_update', visitor);
+    const io = req.app.get('io');
+    if (io) {
+      const eventName = status === 'IN' ? 'visitor_entry' : status === 'OUT' ? 'visitor_exit' : 'visitor_status_update';
+      console.log(`Emitting ${eventName} to society_${req.user.society_id}`);
+      io.to(`society_${req.user.society_id}`).emit(eventName, visitor);
+      io.to(`society_${req.user.society_id}`).emit('visitor_status_update', visitor);
     }
 
-    res.json(visitor);
+    res.json({
+      success: true,
+      data: visitor
+    });
   } catch (err) {
     next(err);
   }

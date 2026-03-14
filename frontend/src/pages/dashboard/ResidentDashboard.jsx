@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import socket from '../../utils/socket';
 import { 
   CreditCard, 
   MessageSquare, 
@@ -71,6 +73,7 @@ const itemVariants = {
 
 const ResidentDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [complaints, setComplaints] = useState([]);
   const [notices, setNotices] = useState([]);
@@ -83,6 +86,7 @@ const ResidentDashboard = () => {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [showPayModal, setShowPayModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -92,10 +96,10 @@ const ResidentDashboard = () => {
         api.get('/maintenance/usage'),
         api.get('/maintenance/payments')
       ]);
-      setComplaints(compResp.data);
-      setNotices(noticeResp.data);
-      setUtilityData(usageResp.data);
-      setPendingPayments(payResp.data.filter(p => p.status !== 'PAID'));
+      setComplaints(compResp.data.data || []);
+      setNotices(noticeResp.data.data || []);
+      setUtilityData(usageResp.data.data || []);
+      setPendingPayments((payResp.data.data || []).filter(p => p.status !== 'PAID'));
     } catch (err) {
       console.error('Failed to fetch resident data:', err);
     } finally {
@@ -103,35 +107,62 @@ const ResidentDashboard = () => {
     }
   };
 
+  const addNotification = (message) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
   useEffect(() => {
     fetchData();
 
-    const socket = io('http://localhost:5000');
-    
+    if (user?.society_id) {
+      console.log(`Joining society room: society_${user.society_id}`);
+      socket.emit('join_society', user.society_id);
+    }
+
     socket.on('new_notice', (notice) => {
+      console.log('Received new_notice:', notice);
       if (notice.society_id === user?.society_id) {
         setNotices(prev => [notice, ...prev]);
-        // Optional: show a toast or alert
+        addNotification("📢 New society notice posted");
       }
     });
 
-    socket.on('complaint_update', (complaint) => {
+    socket.on('complaint_status_update', (complaint) => {
+      console.log('Received complaint_status_update:', complaint);
       if (complaint.resident_id === user?.id) {
-        fetchData();
-        alert(`Your report "${complaint.title}" has been updated: ${complaint.status}`);
+        setComplaints(prev => prev.map(c => c.id === complaint.id ? { ...c, ...complaint } : c));
+        addNotification(`🛠️ Report "${complaint.title}" status updated to ${complaint.status}`);
       }
     });
 
-    return () => socket.disconnect();
+    socket.on('visitor_status_update', (visitor) => {
+      console.log('Received visitor_status_update:', visitor);
+      if (visitor.resident_id === user?.id) {
+        addNotification(`✓ Visitor "${visitor.visitor_name}" status updated to ${visitor.status}`);
+        fetchData(); 
+      }
+    });
+
+    return () => {
+      console.log('Cleaning up socket listeners for ResidentDashboard');
+      socket.off('new_notice');
+      socket.off('complaint_status_update');
+      socket.off('visitor_status_update');
+    };
   }, [user?.id, user?.society_id]);
 
   const handleRaiseComplaint = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/complaints', newComplaint);
+      const resp = await api.post('/complaints', newComplaint);
       setShowCompModal(false);
+      const createdComplaint = resp.data.data;
+      setComplaints(prev => [createdComplaint, ...(prev || [])]);
       setNewComplaint({ title: '', description: '', priority: 'MEDIUM' });
-      fetchData();
       alert('Report lodged successfully');
     } catch (err) {
       alert(err.response?.data?.message || 'Error executing lodge');
@@ -142,9 +173,10 @@ const ResidentDashboard = () => {
     setPaying(true);
     try {
       const res = await api.post(`/maintenance/payments/${paymentId}/pay`);
-      alert(res.data.message);
+      alert(res.data.data.message);
       setShowPayModal(false);
-      fetchData();
+      // Locally remove the paid bill from pending list
+      setPendingPayments(prev => (prev || []).filter(p => p.id !== paymentId));
     } catch (err) {
       alert(err.response?.data?.message || 'Payment failed');
     } finally {
@@ -207,6 +239,26 @@ const ResidentDashboard = () => {
       variants={containerVariants}
       className="p-8 space-y-8 bg-[#f8fafc] min-h-screen text-slate-800"
     >
+      {/* Real-time Notifications */}
+      <div className="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none">
+        <AnimatePresence>
+          {notifications.map(n => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              className="px-6 py-4 bg-white border border-indigo-100 rounded-2xl shadow-xl shadow-indigo-100/50 flex items-center gap-4 pointer-events-auto min-w-[300px]"
+            >
+              <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 flex-shrink-0">
+                <Bell className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-bold text-slate-900">{n.message}</p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Resident Dashboard</h1>
@@ -214,9 +266,8 @@ const ResidentDashboard = () => {
         </div>
         <div className="flex gap-3">
           <Button 
-            onClick={() => setShowPayModal(true)}
-            disabled={pendingAmount === 0}
-            className="px-6 h-12 bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl shadow-sm disabled:opacity-50"
+            onClick={() => navigate('/maintenance')}
+            className="px-6 h-12 bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
           >
             <CreditCard className="w-5 h-5" /> Pay Dues
           </Button>
@@ -302,7 +353,7 @@ const ResidentDashboard = () => {
               <Badge variant="neutral" className="bg-indigo-50 text-indigo-600 border-none">Recent</Badge>
             </div>
             
-            <NoticeBoard notices={notices} loading={loading} />
+            <NoticeBoard notices={Array.isArray(notices) ? notices : []} loading={loading} />
 
             <Button className="w-full mt-8 h-12 bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-100 transition-all">
               View All Notices
@@ -340,7 +391,7 @@ const ResidentDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {complaints.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase())).map(c => (
+                {Array.isArray(complaints) && complaints.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase())).map(c => (
                   <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="font-bold text-slate-900">{c.title}</div>

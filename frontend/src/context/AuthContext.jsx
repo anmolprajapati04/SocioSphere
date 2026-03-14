@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
   async function login({ email, password }) {
     try {
       const resp = await api.post('/auth/login', { email, password });
-      const { user, token } = resp.data;
+      const { user, token } = resp.data.data;
       setUser(user);
       setToken(token);
       setSocietyId(user?.society_id || null);
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
   async function signup(formData) {
     try {
       const resp = await api.post('/auth/register', formData);
-      const { user, token } = resp.data;
+      const { user, token } = resp.data.data;
       setUser(user);
       setToken(token);
       setSocietyId(user?.society_id || null);

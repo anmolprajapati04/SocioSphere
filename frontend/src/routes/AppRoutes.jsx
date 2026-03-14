@@ -14,6 +14,7 @@ import ResidentDirectory from '../pages/ResidentDirectory';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
 import Home from '../pages/Home';
+import AdminMaintenancePage from '../pages/AdminMaintenancePage';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -72,6 +73,16 @@ export default function AppRoutes() {
           <ProtectedRoute allowedRoles={['Admin']}>
             <DashboardLayout>
               <ResidentsPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/maintenance"
+        element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <DashboardLayout>
+              <AdminMaintenancePage />
             </DashboardLayout>
           </ProtectedRoute>
         }

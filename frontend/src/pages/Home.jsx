@@ -30,7 +30,7 @@ import clubhouseImg from '../assets/luxury/clubhouse.png';
 import gardenImg from '../assets/luxury/garden.png';
 
 const Home = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -93,9 +93,12 @@ const Home = () => {
             ))}
             <div className="h-6 w-px transition-colors duration-500 bg-slate-200" />
             {isAuthenticated ? (
-               <Link to={`/${user?.role?.toLowerCase()}`}>
-                  <Button className="bg-primary-900 text-white border-none shadow-xl hover:scale-105 px-8">MY CONSOLE</Button>
-               </Link>
+               <div className="flex items-center gap-4">
+                 <Link to={`/${user?.role?.toLowerCase()}`}>
+                    <Button className="bg-primary-900 text-white border-none shadow-xl hover:scale-105 px-8">MY CONSOLE</Button>
+                 </Link>
+                 <Button onClick={logout} className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-none font-bold px-6 shadow-sm transition-colors">LOGOUT</Button>
+               </div>
             ) : (
                <div className="flex items-center gap-6">
                   <Link to="/login" className="text-xs font-black uppercase tracking-[0.2em] text-primary-900 hover:text-elegant-gold transition-colors duration-300">Login</Link>
